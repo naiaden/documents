@@ -1,0 +1,62 @@
+\Section{Syntax}
+
+We nemen de syntax van While over en breiden deze uit:
+\begin{eqnarray*}
+	a &::=& n \mid
+			x \mid
+			a_1 + a_2 \mid
+			a_1\times a_2 \mid % a1 x a2
+			a_1-a_2 \mid
+			\kw{undef} \\
+	b &::=& \kw{true} \mid
+			\kw{false} \mid
+			a_1 = a_2 \mid
+			a_1\leq a_2 \mid
+			\neg b \mid
+			b_1\wedge b_2 \\
+	&|&		\kw{wait}\:tl \\
+	&|&		\kw{set_result}\:tl\:vn\:a\:b\:tid \\
+	&|&		\kw{set_result}\:tl\:vn\:a\:b \\
+	&|&		\kw{collect_votes}\:tid \\
+	S &::=& x:=a\mid
+			\kw{skip} \mid
+			S_1\:;\:S_2 \mid
+			\kw{if}\:b\:\kw{then}\:S_1\:\kw{else}\:S_2 \mid
+			\kw{while}\:b\:\kw{do}\:S \\
+	&|&		D_V\\
+	&|&		D_F\\
+	&|&     \kw{spawn}\:fl\:tl\_callee\:tl\_caller\:vn\:tid\:D_V \\
+	&|&     \kw{call}\:fl \\
+	&|& 	\kw{start_transaction}\:tid\:S\\
+	&&		\kw{if}\:\kw{collect_votes}\:tid\:\kw{then}\\
+	&&		\qquad\kw{if}\:b\:\kw{then}\\
+	&&		\qquad\qquad S_1\:\kw{commit_transaction}\:tid\\
+	&&		\qquad\kw{else}\\
+	&&		\qquad\qquad S_2\:\kw{rollback_transaction}\:tid\\
+	&&		\kw{else}\\
+	&&		\qquad \:S_3\:\kw{rollback_transaction}\:tid \\
+	&|&	    \kw{if}\:\kw{set_result}\:tl\:vn\:a\:b\:tid\:\kw{then} \\
+	&&      \qquad\:S_1\:\kw{end_commit_transaction}\:tl\:tid  \\
+	&&      \:\kw{else} \\
+	&&      \qquad\:S_2\:\kw{end_rollback_transaction}\:tl\:tid \\
+	D_F 	&::=&
+	\kw{func}\:fl\:tl\_callee\:tl\_caller\:vn\:D_V\:tid\:\kw{is}\:\kw{start}\:S\:\kw{end}\:;\:D_F\mid\epsilon \\ D_V 	&::=& \kw{var}\:x := a\:;\ D_V\mid\epsilon
+\end{eqnarray*}
+
+Zoals gesteld in de hoofdstukken \ref{sec:Functies},~\ref{sec:Parallellisme} en \ref{sec:Transacties} breiden
+we de \Index{meta-variabele}n en \Index{syntactische categorie}\"en uit:
+
+\begin{equation*}
+\begin{array}{rl}
+  	n  & \textrm{geeft een \Index{numeral} aan, \syncat{Num}} \\
+	x  & \textrm{geeft een \Index{variabele} aan, \syncat{Var}} \\
+	a  & \textrm{geeft een \Index{aritmetische expressie} aan, \syncat{Aexp}} \\
+	b  & \textrm{geeft een \Index{booleaanse expressie} aan, \syncat{Bexp}} \\
+	S  & \textrm{geeft een \Index{statement} aan, \syncat{Stm}} \\
+	fl & \textrm{geeft een \Index{functielabel} aan, \syncat{FunctionLabel}} \\
+	tl & \textrm{geeft een \Index{taaklabel} aan, \syncat{TaskLabel}} \\
+	tid& \textrm{geeft een \Index{transactielabel} aan, \syncat{TransactionLabel}} \\
+	vn & \textrm{geeft een \Index{variabelenaam} aan, \syncat{VariableName}}
+\end{array}
+\end{equation*}
+Deze meta-variabelen mogen zowel met accenten gebruikt worden alswel met subscripts.

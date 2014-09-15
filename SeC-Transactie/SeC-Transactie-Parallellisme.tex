@@ -1,0 +1,178 @@
+\Section{Parallellisme}
+
+Een While programma bestaat uit een verzameling van taken (minimaal 1) die parallel aan elkaar worden uitgevoerd. Elke
+taak voert een functie uit. Ieder While programma heeft tenminste \'e\'en functie --- met de naam \functielabel{main} ---
+die door de executie-omgeving als eerste zal worden uitgevoerd. Iedere taak heeft een eigen state. Het is niet mogelijk
+om direct, zonder tussenkomst van de executieomgeving, te communiceren tussen taken.
+
+Om taken te kunnen voorzien van een naam, breiden we de meta-variabelen en syntactische categorie\"en uit:
+\begin{equation*}
+\begin{array}{rl}
+	tl & \textrm{geeft een \Index{taaklabel} aan, \syncat{TaskLabel}}
+\end{array}
+\end{equation*}
+
+\Subsection{spawn}
+Om een taak op te starten introduceren we de statement \kw{\Index{spawn}}; door \kw{spawn} aan te roepen wordt een taak
+gecre\"eerd die begint met het uitvoeren van het eerste statement van de functie die meegeven wordt.
+
+De variabelen \(tl_caller\), \(tl_callee\), \(fl\), \(vn\) en \(tid\) zijn verplichte argumenten. De vraag of \(D_V\) als
+argument meegegeven moet hangt af van de functie met functielabel \(fl\). De waarde van de diverse argumenten is sterk
+gerelateerd aan de vereisten van de functiedeclaratie van de uit te voeren functie. Wanneer er geen argumenten meegegeven
+worden, worden de defaultargumenten van de functie gebruikt.
+
+Zoals aangegeven bij \kw{func} krijgt elke taak een variabele tot zijn beschikking in de caller. In
+\kw{spawn} wordt de naam van deze variabele gezet. Deze variabele is alleen te benaderen met de primitieve functie
+\kw{set_result}. Totdat \kw{set_result} is aangeroepen voor deze variabele is de waarde van deze variabele \kw{undef}.
+
+Als er sprake is van van een transactionele omgeving alswel een niet-transactionele omgeving, dan moet \(tid\) een
+geldige waarde hebben. Als er van een transactionele omgeving geen sprake is, dan krijgt \(tid\) de waarde \kw{undef}.
+Als \(tid\) (transactielabel, zie \ref{sec:Transacties}) gedefinieerd is dan wordt de startstate van de taak opgeslagen.
+
+\begin{tikzpicture}
+\setcounter{threadnum}{1}
+\stepcounter{threadnum}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,1)+(0,2) node[inststyle] (inst3) {\(T_2\)};
+\draw[fill=gray!30] (4,\thethreadnum*2-1+\upperhalfbar)
+				-- (4,\thethreadnum*2-1+\lowerhalfbar)
+				-- (.5\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(.5\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (11,\thethreadnum*2-1+\upperhalfbar) % transactional env
+				-- (11,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-1.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-1.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\draw[] (9.5,\thethreadnum*2-1+2.75) % transactional env
+				-- (9.5,\thethreadnum*2-1-.5)
+				-- (\twidth-.9\unitlength,\thethreadnum*2-1-.5)
+				--	(\twidth-.9\unitlength,\thethreadnum*2-1+2.75)-- cycle;
+
+\node at (\twidth-.9\unitlength,\thethreadnum*2-1+2.75) [below left]{$\mathbf{tid}$};
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, above=0.75em] {};
+\path (0,2)+(0,3) node[inststyle] (inst2) {\(T_1\)};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+				-- (2,\thethreadnum*2-1+\lowerhalfbar)
+				-- (.5\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (.5\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (2+.55\twidth,\thethreadnum*2-1+\upperhalfbar) % transactional env
+				-- (2+.55\twidth,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Result/argument arrows
+\node (b) at (3.5,5) {};
+\node (m) at (3.5,3) {};
+\node (e) at (4.1,3) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+\node (b) at (10.5,5) {}; \node (m) at (10.5,3) {}; \node (e) at (11.1,3) {}; \draw[->,>=angle 60] (b) |- (m) -- (e) node
+{};
+\end{tikzpicture}
+Een schematische weergave van een \kw{spawn}. Links wordt een taak opgestart zonder gebruik te maken van een
+transactionele omgeving, rechts wordt er wel gebruik van gemaakt.
+
+\begin{functie}{spawn $fl$ $tl\_callee$ $tl\_caller$ $vn$ $tid$ $D_V$}
+	\functieargument{$fl$: FunctieLabel van de functie}
+	\functieargument{$tl\_callee$: TaakLabel van de callee}
+	\functieargument{$tl\_caller$: TaakLabel van de caller}
+	\functieargument{$vn$: Naam van de result variabele in de caller}
+	\functieargument{$tid$: TransactionLabel}
+	Geeft aan van welke transactionele omgeving de callee onderdeel uitmaakt. Dit wordt gebruikt door
+	\functienaam{collect_votes}. Als $tid$ \kw{undef} is, dan is de taak geen onderdeel van een transactie
+	\functieargument{$D_V$: De lijst met functieargumenten}
+	\functieomschrijving
+	Start een taak met het meegegeven label. Reserveer variabele $vn$ voor de return value van de callee
+\end{functie}
+
+
+\Subsection[Setresult]{set_result}
+Om het resultaat van een taak terug te geven aan de caller introduceren we de (primitieve) booleaanse expressie
+\kw{set_result}. De callee geeft met behulp van \kw{set_result} de waarde door aan de caller. Omdat de beide
+taken van elkaar zijn afgeschermd zijn, gebeurt dit door tussenkomst van de executieomgeving.
+
+Omdat niet altijd uit het domein van \textsl{waarde} op te maken is, of de berekening goed gegaan is, wordt
+dit expliciet door de boolean \textsl{statusTaak} aangegeven.
+
+Er zijn twee versies van \kw{set_result}. De ene versie is voor gebruik in een niet-transactionele omgeving. De andere
+is voor gebruik in een transactionele omgeving en heeft een extra argument $tid$.
+
+Als \kw{set_result} wordt aangeroepen in een transactionele omgeving, dan zal \kw{set_result} blokkeren totdat er
+\kw{commit_transaction} of \kw{rollback_transaction} plaats vindt. Als \kw{set_result} wordt aangeroepen in dezelfde taak
+als waarin ook \kw{start_transactie} is aangeroepen, dan blokkeert de \kw{set_result} nooit en returnt met dezelfde
+waarde als de meegegeven statusTaak. Een (potentieel) blokkerende \kw{set_result} retourneert met \kw{true} bij een
+\kw{commit_transaction} en \kw{false} bij een \kw{rollback_transaction}.
+
+Alle taken die in het uitvoeren van \kw{wait} geblokkeerd zijn, worden onmiddelijk na een \kw{set_result}
+gedeblokkeerd. De \kw{set_result} en \kw{wait} co\"ordinatie wordt atomair afgehandeld waarbij racecondities worden voorkomen.
+
+Als \textsl{statusTaak} \kw{false} is, dan wordt is \(a\) door de executieomgeving op \kw{undef} gezet, ongeacht de
+concrete waarde die bij de functieaanroep wordt doorgegeven.
+
+\begin{functie}{set_result $tl$ $vn$ $a$ $b$}
+	\functieargument{$tl$: Taaklabel van de caller}
+	\functieargument{$vn$: Naam van de result variabele in de caller}
+	\functieargument{$a$: Waarde van result variabele}
+	\functieargument{$b$: StatusTaak}
+	\functieresultaat{} \kw{true} als $b$ is true, \kw{false} als $b$ is false.
+	\functieomschrijving
+	Zet in de caller op de gereserveerde plaats \(vn\) de waarde \(a\)
+
+	De waarde $b$ wordt gebruikt als return value van een eventuele \kw{wait}
+
+	Als de caller een \kw{wait} gedaan heeft alvorens de callee een \kw{set_result} gedaan heeft, dan wordt de \kw{wait}
+	van de caller geblokkeerd. Na het uitvoeren van een \kw{set_result} worden eventuele blokkades opgeheven
+\end{functie}
+
+\begin{functie}{set_result $tl$ $vn$ $a$ $b$ $tid$}
+	\functieargument{$tl$: Taaklabel van de caller}
+	\functieargument{$vn$: Naam van de result variabele in de caller}
+	\functieargument{$a$: Waarde van result variabele}
+	\functieargument{$b$: StatusTaak}
+	\functieargument{$tid$: TransactionLabel}
+	\functieresultaat{} \kw{true} als $tid$ en commit. \kw{false} als $tid$ en rollback.
+	\functieomschrijving
+	Zet in de caller op de gereserveerde plaats \(vn\) de waarde \(a\)
+
+	De waarde $b$ wordt gebruikt als return value van een eventuele \kw{wait}
+
+	Als de caller een \kw{wait} gedaan heeft alvorens de callee een \kw{set_result} gedaan heeft, dan wordt de \kw{wait}
+	van de caller geblokkeerd. Na het uitvoeren van een \kw{set_result} worden eventuele blokkades opgeheven
+\end{functie}
+
+\Subsection{wait}
+Om te wachten op het resultaat van een taak introduceren we de booleanse expressie \kw{wait}; met behulp van \kw{wait}
+wacht de caller op het uitvoeren van \kw{set_result} door de callee.
+
+\kw{wait} blokkeert zolang \kw{set_result} niet aangeroepen is door de callee. Als de callee \kw{set_result} heeft
+aangeroepen voordat \kw{wait} wordt aangeroepen, zal \kw{wait} niet blokkeren. De executieomgeving zal er voor
+zorgen dat hierbij geen racecondities op kunnen treden.
+
+\begin{itemize}
+\item Als \kw{set_result} is aangeroepen retourneert \kw{wait} \textsl{statusTaak}
+\item Als de taak wordt be\"eindigd voordat \kw{set_result} wordt aangeroepen zal de executieomgeving \kw{false}
+retourneren
+\end{itemize}
+
+Merk op dat de \kw{wait} de enige methode is voor de caller om te achterhalen wat het resultaat van een callee is.
+
+\begin{functie}{wait $tl$}
+	\functieargument{$tl$: Taaklabel van de callee}
+	\functieresultaat{} \kw{true} als $b$ van \kw{set_result} \kw{true} is. \kw{false} anders.
+	\functieomschrijving
+	Een semaphore die de taak --- de caller van \kw{wait} --- blokkeert totdat er een resultaat bekend is voor de taak
+	$tl$
+\end{functie}
+

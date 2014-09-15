@@ -1,0 +1,59 @@
+\Section{Functies}
+
+We breiden While uit met de notie van functies. \Index[functie]{Functies} zijn vergelijkbaar met de procedures
+binnen While zoals beschreven in \cite[p. 52]{SemanticsWithApplications}. De definitie van functies is analoog aan die
+van procedures in While. Bij het opstarten van een programma zal de executieomgeving alle functielabels
+globaal zichtbaar maken. De volgorde waarin de functies worden gedefinieerd is niet van belang: voordat er een functie
+wordt uitgevoerd zijn alle functies zichtbaar.
+
+De executieomgeving zal bij het opstarten van een While programma de taak \functielabel{\Index{main}} opstarten met als
+startfunctie de functie met het functielabel \functielabel{main} en een lege state.
+
+Een programma wordt be\"eindigd als het einde van de \functielabel{main}-functie wordt bereikt of als geen enkele taak
+meer loopt.
+
+Om functies te kunnen voorzien van een naam, breiden we de meta-variabelen en syntactische categorie\"en uit:
+\begin{equation*}
+\begin{array}{rl}
+	fl & \textrm{geeft een \index{functielabel}functielabel aan, \syncat{FunctionLabel}} \\
+\end{array}
+\end{equation*}
+
+Een functie wordt gekenmerkt door de functienaam, de argumenten en de statements die de functie uitvoert. De
+functienaam en de argumenten van de functie worden ook wel functietype of functiedeclaratie genoemd. De statements
+binnen de functie worden ook wel functiebody of functie-implementatie genoemd.
+
+De functie die aanroept wordt caller genoemd, en de functie die aangeroepen wordt, wordt callee genoemd.
+
+\begin{functie}{func $fl$ $tl\_callee$ $tl\_caller$ $vn$ $tid$ $D_V$ \kw{is start} $S$ \kw{end}}
+	\functieargument{$fl$: FunctieLabel, naam van de functie}
+	\functieargument{$tl\_callee$: TaakLabel van de callee}
+	\functieargument{$tl\_caller$: TaakLabel van de caller}
+	\functieargument{$vn$: Naam van de result variabele in de caller}
+	\functieargument{$tid$: TransactionLabel}
+	Geeft aan van welke transactionele omgeving de callee onderdeel uitmaakt. Dit wordt gebruikt door
+	\functienaam{collect_votes}. Als $tid$ \kw{undef} is, dan is de taak geen onderdeel van een transactie
+	\functieargument{$D_V$}: Lijst met functieargumenten
+	\functiebody{$S$: Statements van de functie-implementatie}
+\end{functie}
+
+\Subsection{Functieargumenten}
+Argumenten worden doorgegeven aan de functies door een lijst met functieargumenten $D_V$. De exacte lijst van
+functieargumenten wordt gedefinieerd door de functie zelf.
+
+Een aantal functieargumenten zijn verplicht en staan als zodanig apart in de lijst met argumenten vermeld. Het is aan
+de programmeur om deze variabelen van een juiste waarde te voorzien.
+
+Alle \Index{functieargument}en worden ``by value'' doorgegeven. Het is mogelijk om in de functiedeclaratie de argument
+van een default value te voorzien. In dat geval is het niet nodig voor om bij het aanroepen van de functie de waarden
+van de variabelen mee te geven, maar zullen de variabelen in de functiebody zelf de default waarde hebben.
+
+De argumenten worden ``by name'' doorgegeven. Het is niet relevant in welke volgorde de variabelen worden gedeclareerd of
+meegegeven bij aanroep van een functie. Dat betekent wel dat de namen van de mee te geven variabelen uniek moeten zijn
+binnen de aanroep.
+
+De scope van de namen van de argumenten begint vanaf \kw{spawn} en eindigt bij het uitvoeren van de laatste statement van de
+functie. Het is mogelijk om in een \kw{spawn} een argument variabele met de naam \(x\) te initialiseren met een
+gelijknamige lokale variabele: \(var\:x:=x\).
+
+

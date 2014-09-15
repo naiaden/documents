@@ -1,0 +1,26 @@
+\section*{Conclusie}
+
+\Subsection{Bespreking}
+
+In het voorgaand hebben we een aantal uitbreidingen aan de taal While toegevoegd. De kern van de uitbreidingen bestaat
+uit uitbreidingen om transacties in parallelle taken uit te voeren.
+
+Wij hebben er voor gekozen om de uitbredingen minimaal te houden. Dat betekent dat een aantal gevallen die in ``echte
+parallelle transacties'' voorkomen niet met behulp van deze uitbreidingen afgehandeld kunnen worden.
+
+Het is nu mogelijk dat het programma nooit uit een \kw{wait} toestand komt: als een taak een \kw{while} \kw{true}
+\kw{skip} uitvoert zonder ooit \kw{set_result} aan te roepen zal een caller die \kw{wait} aanroept voor deze callee
+nooit uit de blokkerende toestand van \kw{wait} komen.
+
+Het niet ontwaken uit een blokkerende toestand zou verholpen kunnen worden door het invoeren van timers: als een taak
+langer dan $n$-tijd geblokkerd is dan returnt de functie met een speciale waarde waarna het programma weer verder kan
+gaan. Om capaciteitsredenen is een dergelijke uitbreiding buiten beschouwing gelaten.
+
+Het transactiemechanisme, in essentie een 2-phase commit implementatie, is kwetsbaar voor het aborten van de
+taak die de transactie is begonnen: als die taak tussen de \kw{collect_votes} en de \kw{commit_transaction} abort dan
+zullen de onderliggende taken niet uit de blokkerende toestand van \kw{set_result} komen. Een vergelijkbaar opmerking
+kan gemaakt worden over \kw{commit/rollback_transaction} en \kw{end_commit/rollback_transaction}, maar dan voor een
+abort van een van de onderliggende taken. Dit is een bekend probleem voor 2-phase commit in het algemeen: zie
+\cite{SkeenStonebraker}.
+
+

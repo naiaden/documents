@@ -1,0 +1,60 @@
+\Section{Programma}
+
+Met behulp van een concreet programma gaan we drie scenario's bekijken:
+\begin{enumerate}
+\item Alles gaat goed
+\item De berekening levert een domeinfout op
+\item Er vindt een abort plaats
+\end{enumerate}
+
+We doen dat met onderstaand programma waarvan we zelf makkelijk de uitkomst kunnen bepalen, en dus ook kunnen
+controleren of het programma hetzelfde resultaat oplevert. De resultaten die we verwachten respectievelijk aan de
+scenario's hierboven:
+\begin{enumerate}
+\item Taak1 levert 3 op, taak2 levert 7 op, en totale resultaat is 10
+\item Taak2 wordt opgestart met de waarden \(x:=5\) en \(y:=5\), hierdoor kan het programma niet een geldig antwoord
+geven en moet er dus een rollback plaatsvinden
+\item Een van de twee taken sterft af door onbekende oorzaak; ook hiervan is het netto resultaat dat er een rollback
+plaats gaat vinden
+\end{enumerate}
+
+\begin{lstlisting}[caption={Optellen}]
+func optellen tl tl vn tid var x:=2; var y:=3; epsilon is
+start
+	result := x + y;
+	if result < 10
+	then
+		valid := true
+	else
+		valid := false
+	if set_result tl vn result valid tid then
+		skip end_commit_transaction tl tid
+	else
+		skip end_rollback_transaction tl tid
+end
+\end{lstlisting}
+\begin{lstlisting}[caption={Main}]
+func main tl tl vn tid epsilon is
+start
+	start_transaction transactie1
+	main_1:=undef;
+	main_2:=undef;
+	spawn fl:=optellen tl_callee:=taak1 tl_caller:=main vn:=main_1 tid:=transactie1
+		var x:=1; var y:=2; epsilon;
+	spawn fl:=optellen tl_callee:=taak2 tl_caller:=main vn:=main_2 tid:=transactie1
+		var x:=3; var y:=4; epsilon;
+	if wait taak1 then skip else skip;
+	if wait taak2 then skip else skip
+	if collect_votes transactie1 then
+		grand_total := main_1 + main_2;
+		if grand_total < 15 then
+			skip;
+			commit_transaction transactie1
+		else
+			skip;
+			rollback_transaction transactie1
+	else
+		grand_total := 0;
+		rollback_transaction transactie1
+end
+\end{lstlisting}

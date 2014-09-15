@@ -1,0 +1,729 @@
+\Section{Bewijs} \nocite{SkeenStonebraker}
+De bewijzen zullen vanwege de omvang gepresenteerd worden in twee vormen. Allereerst zal in dit hoofdstuk de korte
+versie vermeld staan. Deze korte versie laat niet steeds alle statements zien, maar toont wel de functienaam van de
+functie die gebruikt wordt, en toont de huidige state op dat moment. Met behulp van deze versie is het mogelijk het
+grote bewijs na te gaan, of zelf het bewijs te volgen wanneer de statements allemaal uitgeschreven worden.
+
+De tweede versie is de complete versie, dus compleet met functienamen, states en de complete statementsequentie. Omdat
+de grootte van deze versies weinig gering zijn, zijn ze als los bestand meegeleverd. Dit bestand is te bezichtigen op
+\url{http://trac.askesis.nl/tidbits/browser/SeC/aux/Sec-Transactie-Bewijs.ods} of op
+\url{http://trac.askesis.nl/tidbits/browser/SeC/aux/Sec-Transactie-Bewijs.xls} of via de bijlage bij dit document.
+
+Elke bewijsvoering wordt begeleid door een afbeelding die een schets van de opbouw van het programma weergeeft. In deze
+afbeeldingen zijn markers en in het bewijs zullen deze markers ook verschijnen zodat de lezer zich beter kan ori\"enteren
+en het duidelijker is in welke context een bepaalde state zich bevindt.
+
+Het bewijs dient van boven naar beneden gelezen te worden, behalve de taken op zichzelf, die mogen parallel bekeken
+worden (we kennen toch geen racecondities). De state aangegeven is de state die geldt op het moment dat je de functie
+besluit te kiezen. Het resultaat van die functie staat dus \'e\'en regel lager. Voor een complete bewijsboom, zie
+bijlage.
+
+\Subsection{Commit}
+Bij een commit willen we graag bewijzen dat beide taken een antwoord teruggeven aan de hoofdtaak, en dat deze
+antwoorden verkregen zijn op een manier waarvan de taak dacht dat het goed was.
+
+In dit bewijs worden twee taken gespawned uit \(main\) die de taken hebben om \(1\) bij \(2\) op te tellen, en om \(3\)
+bij \(4\) op te tellen. We verwachten dus dat \(main\) respectievelijk de waarden \(3\) en \(7\) binnenkrijgt. Als
+\(main\) deze waarden vervolgens optelt moet aan het einde van het programma \kw{grand_total} de waarde 10 hebben.
+
+\begin{tikzpicture}
+\setcounter{threadnum}{1}
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-2.65\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-2.65\unitlength,.5) % m
+									-- (\twidth-2.15\unitlength,.5) % m'
+									-- (\twidth-2.15\unitlength,5+\lowerhalfbar); %e
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-1.65\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-1.65\unitlength,.5) % m
+									-- (\twidth-1.15\unitlength,.5) % m'
+									-- (\twidth-1.15\unitlength,5+\lowerhalfbar); %e
+
+\draw[] (2.5,\thethreadnum*4-1+2.75) % transactional env
+				-- (2.5,\thethreadnum*2-2)
+				-- (\twidth-.9\unitlength,\thethreadnum*2-2)
+				--	(\twidth-.9\unitlength,\thethreadnum*4-1+2.75)-- cycle;
+\node at (\twidth-.9\unitlength,\thethreadnum*4-1+2.75) [below left]{\textbf{transactie1}};
+
+% Instance 3
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,0)+(0,1) node[inststyle] (inst1) {taak2};
+\draw[fill=gray!30] (3.15,\thethreadnum*2-1+\upperhalfbar)
+				-- (3.15,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-3.1\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-3.1\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (\twidth-2.15\unitlength,\thethreadnum*2-1+\upperhalfbar)
+				-- (\twidth-2.15\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-1.65\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-1.65\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,1)+(0,2) node[inststyle] (inst3) {taak1};
+\draw[fill=gray!30] (3.15,\thethreadnum*2-1+\upperhalfbar)
+				-- (3.15,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-3.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-3.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (\twidth-2.15\unitlength,\thethreadnum*2-1+\upperhalfbar)
+				-- (\twidth-2.15\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-1.65\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-1.65\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, above=0.75em] {};
+\path (0,2)+(0,3) node[inststyle] (inst2) {main};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+				-- (2,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\draw[dotted] (2,5)--(2,6.25) node[marker] () {\footnotesize a};
+\draw[dotted] (2.5,5)--(2.5,6.25) node[marker] () {\footnotesize b};
+\draw[dotted] (2.75,5)--(2.75,6.25) node[marker] () {\footnotesize c};
+\draw[dotted] (3,5)--(3,6.25) node[marker] () {\footnotesize d};
+\draw[dotted] (\twidth-3.4\unitlength,3)--(\twidth-3.4\unitlength,6.25) node[marker] () {\footnotesize t};
+\draw[dotted] (\twidth-3.1\unitlength,1)--(\twidth-3.1\unitlength,6.25) node[marker] () {\footnotesize u};
+\draw[dotted] (\twidth-2.65\unitlength,5)--(\twidth-2.65\unitlength,6.25) node[marker] () {\footnotesize v};
+\draw[dotted] (\twidth-2.15\unitlength,5)--(\twidth-2.15\unitlength,6.25) node[marker] () {\footnotesize w};
+%\draw[dotted] (\twidth-1.65\unitlength,1)--(\twidth-1.65\unitlength,6.25) node[marker] () {\footnotesize x};
+%\draw[dotted] (\twidth-1.15\unitlength,3)--(\twidth-1.15\unitlength,6.25) node[marker] () {\footnotesize y};
+\draw[dotted] (\twidth-.9\unitlength,5)--(\twidth-.9\unitlength,6.25) node[marker] () {\footnotesize z};
+
+
+% Result/argument arrows
+%t3
+\node (b) at (2.75,5) {};
+\node (m) at (2.75,1) {};
+\node (e) at (3.25,1) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+%t2
+\node (b) at (3,5) {};
+\node (m) at (3,3) {};
+\node (e) at (3.25,3) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+
+
+\draw[decorate,decoration=zigzag] {(\twidth-3.1\unitlength, 1) -- (\twidth-2.65\unitlength,1)}; %t3
+\draw[decorate,decoration=zigzag] {(\twidth-3.4\unitlength, 3) -- (\twidth-2.65\unitlength,3)}; %t2
+
+\end{tikzpicture}
+
+Dit is het programma zoals we gebruiken voor het bewijs:
+
+\begin{lstlisting}[caption={Commit}]
+func optellen tl tl vn tid var x:=2; var y:=3; epsilon is
+start
+	result := x + y;
+	if result < 10
+	then
+		valid := true
+	else
+		valid := false
+	if set_result tl vn result valid tid then
+		skip end_commit_transaction tl tid
+	else
+		skip end_rollback_transaction tl tid
+end;
+func main tl tl vn tid epsilon is
+start
+	start_transaction transactie1
+	main_1:=undef;
+	main_2:=undef;
+	spawn fl:=optellen tl_callee:=taak1 tl_caller:=main vn:=main_1 tid:=transactie1
+		var x:=1; var y:=2; epsilon;
+	spawn fl:=optellen tl_callee:=taak2 tl_caller:=main vn:=main_2 tid:=transactie1
+		var x:=3; var y:=4; epsilon;
+	if wait taak1 then skip else skip;
+	if wait taak2 then skip else skip
+	if collect_votes transactie1 then
+		grand_total := main_1 + main_2;
+		if grand_total < 15 then
+			skip;
+			commit_transaction transactie1
+		else
+			skip;
+			rollback_transaction transactie1
+	else
+		grand_total := 0;
+		rollback_transaction transactie1
+end;
+epsilon
+\end{lstlisting}
+
+\(
+\begin{array}{rl}
+& Executieomgeving \\\hline
+\kw{func1} & s  \\
+\kw{func1} & s  \\
+\kw{func2} & s  \\
+\kw{spawn} & s  \\
+& s \\
+& \\
+& main\marker{a} \\\hline
+\kw{var2} & s[\kw{tl}\mapsto\kw{\kw{\kw{undef}}}][\kw{tid}\mapsto \kw{\kw{undef}}][\kw{vn}\mapsto \kw{\kw{undef}}]  \\
+\kw{var2} & s[\kw{tl}\mapsto\kw{\kw{\kw{undef}}}][\kw{tid}\mapsto \kw{\kw{undef}}][\kw{vn}\mapsto \kw{\kw{undef}}]  \\
+\kw{call} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto \kw{\kw{undef}}][\kw{vn}\mapsto \kw{\kw{undef}}]\marker{b}  \\
+\kw{transaction} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto \kw{\kw{undef}}][\kw{vn}\mapsto \kw{\kw{undef}}] \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}] \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto\kw{\kw{undef}}]\marker{c} \\
+\kw{spawn} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto\kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}]\marker{d} \\
+\kw{spawn} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+
+\kw{skip} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto 3][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto 3][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto3][\kw{main_2}\mapsto 7]\marker{v} \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto3][\kw{main_2}\mapsto 7]\marker{w} \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto 3][\kw{main_2}\mapsto 7] \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto 3][\kw{main_2}\mapsto 7] \\
+          & \hspace{\sLength}[\kw{grand_total}\mapsto 10] \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto3][\kw{main_2}\mapsto 7] \\
+          & \hspace{\sLength}[\kw{grand_total}\mapsto 10]\marker{z} \\
+\kw{commit} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto 3][\kw{main_2}\mapsto 7] \\
+          & \hspace{\sLength}[\kw{grand_total}\mapsto 10] \\
+& s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto \kw{\kw{undef}}][\kw{main_1}\mapsto 3][\kw{main_2}\mapsto 7] \\
+          & \hspace{\sLength}[\kw{grand_total}\mapsto 10] \\
+& \\
+& taak1 \\\hline
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 3]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 2]  \\
+\kw{call} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 2]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 2]  \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 2][\kw{result}\mapsto 3]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto1][\kw{y}\mapsto2][\kw{result}\mapsto 3]\marker{t}  \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 2][\kw{result}\mapsto 3][\kw{valid}\mapsto \kw{true}]  \\
+\end{array}
+\)
+
+\(
+\begin{array}{rl}
+\kw{end trans tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto 2][\kw{result}\mapsto 3][\kw{valid}\mapsto \kw{true}]  \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto\kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto2][\kw{result}\mapsto 3][\kw{valid}\mapsto \kw{true}]  \\
+&s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto\kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 1][\kw{y}\mapsto2][\kw{result}\mapsto 3][\kw{valid}\mapsto \kw{true}] \\
+& \\
+& taak2 \\\hline
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 2]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2[\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 3][\kw{y}\mapsto 3]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 3][\kw{y}\mapsto 4]  \\
+\kw{call} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 3][\kw{y}\mapsto 4]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 3][\kw{y}\mapsto 4]  \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 3][\kw{y}\mapsto 4][\kw{result}\mapsto 7]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto3][\kw{y}\mapsto4][\kw{result}\mapsto 7]\markers{u}  \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 3][\kw{y}\mapsto 4][\kw{result}\mapsto 7][\kw{valid}\mapsto \kw{true}]  \\
+\kw{end trans tt} & s[\kw{tl}\mapsto\kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto\kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto3][\kw{y}\mapsto4][\kw{result}\mapsto 7][\kw{valid}\mapsto \kw{true}]  \\
+\kw{skip} & s[\kw{tl}\mapsto\kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto\kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto3][\kw{y}\mapsto4][\kw{result}\mapsto 7][\kw{valid}\mapsto \kw{true}]  \\
+          & s[\kw{tl}\mapsto\kw{\kw{undef}}][\kw{tid}\mapsto transactie1][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto\kw{\kw{undef}}][\kw{main_2}\mapsto \kw{\kw{undef}}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto3][\kw{y}\mapsto4][\kw{result}\mapsto 7][\kw{valid}\mapsto \kw{true}]
+\end{array}
+\)
+
+De waarden van \kw{main_1} en \kw{main_2} zijn inderdaad respectievelijk \(3\) en \(7\), en \kw{grand_total} heeft
+inderdaad de waarde \(10\).
+
+\Subsection{Rollback}
+Bij een rollback willen we graag bewijzen dat als er een taak is die er niet in slaagt om op juiste wijze tot een
+antwoord te komen, dat de hele transactie alsware het een atomair blok teruggaat naar de state waarin de transactie
+gestart is.
+
+In het bewijs zal \(taak1\) de waarden \(4\) en \(5\) optellen. Omdat deze onder de grens liggen van \(10\), zal deze
+taak vinden dat de antwoorden juist zijn en goed genoeg zijn om door te geven aan de caller. \(taak2\) daarentegen zal
+de waarden \(5\) en \(5\) optellen. Hiermee komt \(taak2\) niet door de domeincontrole die ervoor zorgt dat de som niet
+boven de \(10\) mag komen. \(taak2\) zegt dat hij niet tot juiste antwoorden heeft kunnen komen, en als reactie daarop
+zal \(main\) een rollback in gang zetten.
+
+We verwachten dat de state van \(main\) aan het einde van het programma gelijk is aan de state die \(main\) kreeg na
+het spawnen. Ook de taken die betrokken zijn bij de transactie zullen teruggaan naar de state waarmee ze gespawned zijn.
+
+\begin{tikzpicture}
+\setcounter{threadnum}{1}
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-2.65\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-2.65\unitlength,.5) % m
+									-- (\twidth-2.15\unitlength,.5) % m'
+									-- (\twidth-2.15\unitlength,5+\lowerhalfbar); %e
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-1.65\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-1.65\unitlength,.5) % m
+									-- (\twidth-1.15\unitlength,.5) % m'
+									-- (\twidth-1.15\unitlength,5+\lowerhalfbar); %e
+
+\draw[] (2.5,\thethreadnum*4-1+2.75) % transactional env
+				-- (2.5,\thethreadnum*2-2)
+				-- (\twidth-.9\unitlength,\thethreadnum*2-2)
+				--	(\twidth-.9\unitlength,\thethreadnum*4-1+2.75)-- cycle;
+\node at (\twidth-.9\unitlength,\thethreadnum*4-1+2.75) [below left]{\textbf{transactie2}};
+
+% Instance 3
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,0)+(0,1) node[inststyle] (inst1) {taak2};
+\draw[fill=gray!30] (3.15,\thethreadnum*2-1+\upperhalfbar)
+				-- (3.15,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-3.1\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-3.1\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (\twidth-2.15\unitlength,\thethreadnum*2-1+\upperhalfbar)
+				-- (\twidth-2.15\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-1.65\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-1.65\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,1)+(0,2) node[inststyle] (inst3) {taak1};
+\draw[fill=gray!30] (3.15,\thethreadnum*2-1+\upperhalfbar)
+				-- (3.15,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-3.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-3.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (\twidth-2.15\unitlength,\thethreadnum*2-1+\upperhalfbar)
+				-- (\twidth-2.15\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-1.65\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-1.65\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, above=0.75em] {};
+\path (0,2)+(0,3) node[inststyle] (inst2) {main};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+				-- (2,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\draw[dotted] (2,5)--(2,6.25) node[marker] () {\footnotesize a};
+\draw[dotted] (2.5,5)--(2.5,6.25) node[marker] () {\footnotesize b};
+\draw[dotted] (2.75,5)--(2.75,6.25) node[marker] () {\footnotesize c};
+\draw[dotted] (3,5)--(3,6.25) node[marker] () {\footnotesize d};
+\draw[dotted] (\twidth-3.4\unitlength,3)--(\twidth-3.4\unitlength,6.25) node[marker] () {\footnotesize t};
+\draw[dotted] (\twidth-3.1\unitlength,1)--(\twidth-3.1\unitlength,6.25) node[marker] () {\footnotesize u};
+\draw[dotted] (\twidth-2.65\unitlength,5)--(\twidth-2.65\unitlength,6.25) node[marker] () {\footnotesize v};
+\draw[dotted] (\twidth-2.15\unitlength,5)--(\twidth-2.15\unitlength,6.25) node[marker] () {\footnotesize w};
+%\draw[dotted] (\twidth-1.65\unitlength,1)--(\twidth-1.65\unitlength,6.25) node[marker] () {\footnotesize x};
+%\draw[dotted] (\twidth-1.15\unitlength,3)--(\twidth-1.15\unitlength,6.25) node[marker] () {\footnotesize y};
+\draw[dotted] (\twidth-.9\unitlength,5)--(\twidth-.9\unitlength,6.25) node[marker] () {\footnotesize z};
+
+% Result/argument arrows
+%t3
+\node (b) at (2.75,5) {};
+\node (m) at (2.75,1) {};
+\node (e) at (3.25,1) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+%t2
+\node (b) at (3,5) {};
+\node (m) at (3,3) {};
+\node (e) at (3.25,3) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+\draw[decorate,decoration=zigzag] {(\twidth-3.1\unitlength, 1) -- (\twidth-2.65\unitlength,1)}; %t3
+\draw[decorate,decoration=zigzag] {(\twidth-3.4\unitlength, 3) -- (\twidth-2.65\unitlength,3)}; %t2
+
+\end{tikzpicture}
+
+\begin{lstlisting}[caption={Rollback}]
+func optellen tl tl vn tid var x:=2; var y:=3; epsilon is
+start
+	result := x + y;
+	if result < 10
+	then
+		valid := true
+	else
+		valid := false
+	if set_result tl vn result valid tid then
+		skip end_commit_transaction tl tid
+	else
+		skip end_rollback_transaction tl tid
+end;
+func main tl tl vn tid epsilon is
+start
+	start_transaction transactie2
+	main_1:=undef;
+	main_2:=undef;
+	spawn fl:=optellen tl_callee:=taak1 tl_caller:=main vn:=main_1 tid:=transactie2
+		var x:=4; var y:=5; epsilon;
+	spawn fl:=optellen tl_callee:=taak2 tl_caller:=main vn:=main_2 tid:=transactie2
+		var x:=5; var y:=5; epsilon;
+	if wait taak1 then skip else skip;
+	if wait taak2 then skip else skip
+	if collect_votes transactie2 then
+		grand_total := main_1 + main_2;
+		if grand_total < 15 then
+			skip;
+			commit_transaction transactie2
+		else
+			skip;
+			rollback_transaction transactie2
+	else
+		grand_total := 0;
+		rollback_transaction transactie2
+end;
+epsilon
+\end{lstlisting}
+
+\(
+\begin{array}{rl}
+& Executieomgeving \\\hline
+\kw{func1} & s  \\
+\kw{func1} & s  \\
+\kw{func2} & s  \\
+\kw{spawn} & s  \\
+& s \\
+& \\
+& main\markers{a} \\\hline
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}]\\
+\kw{call} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}]\markers{b}\\
+\kw{transaction} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}]\\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}]\\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}]\markers{c}\\
+\kw{spawn} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]\markers{d}\\
+\kw{spawn} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]\\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]\\
+
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}]  \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}]  \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}] \markers{v} \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}] \markers{w,z} \\
+\kw{rollback} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}] \\
+		  & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}] \\
+& \\
+& taak1 \\\hline
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 3]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5]  \\
+\kw{call} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5]  \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9]\markers{t}  \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{true}]  \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{true}]  \\
+\kw{end_rollback} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{true}] \\
+\end{array}
+\)
+
+\(
+\begin{array}{rl}
+& s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1] \\
+& \\
+& taak2 \\\hline
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 2]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 3]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5]  \\
+\kw{call} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5]  \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5][\kw{result}\mapsto 10]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5][\kw{result}\mapsto 10] \marker{u} \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5][\kw{result}\mapsto 10] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{false}]  \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5][\kw{result}\mapsto 10] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{false}]  \\
+\kw{end_rollback} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2][\kw{x}\mapsto 5][\kw{y}\mapsto 5][\kw{result}\mapsto 10] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{false}] \\
+& s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie2][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2]
+\end{array}
+\)
+
+Alle taken, dus \(main\), \(taak1\) en \(taak2\) zijn allemaal terug naar de state waarin ze gespawned zijn omdat er
+een rollback in gang gezet was. Dit betekent dat het rollbackmechanisme zijn werk gedaan heeft.
+
+\Subsection{Abort}
+Bij de het bewijzen dat het systeem blijft functioneren als er een abort plaats vindt, gaat het om hoe dit waargenomen
+wordt, en hoe hier mee omgegaan wordt. Zoals dit werk beschrijft zullen we bij een abort een rollback doen.
+
+Omdat we geen statement voor abort hebben, maar de abort iets is dat van buitenaf komt, is er ook geen speciale notatie
+voor. De executieomgeving kan wel waarnemen of er een abort optreedt, vandaar dat er op geanticipeerd kan worden.
+
+We verwachten dat als \(taak2\) een abort krijgt, alle taken behalve de taken die een abort gehad hebben, teruggaan
+naar de state zoals die was wanneer ze eenmaal gespawned waren.
+
+\begin{tikzpicture}
+\setcounter{threadnum}{1}
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-2.65\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-2.65\unitlength,.5) % m
+									-- (\twidth-2.15\unitlength,.5) % m'
+									-- (\twidth-2.15\unitlength,5+\lowerhalfbar); %e
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-1.65\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-1.65\unitlength,.5) % m
+									-- (\twidth-1.15\unitlength,.5) % m'
+									-- (\twidth-1.15\unitlength,5+\lowerhalfbar); %e
+
+\draw[] (2.5,\thethreadnum*4-1+2.75) % transactional env
+				-- (2.5,\thethreadnum*2-2)
+				-- (\twidth-.9\unitlength,\thethreadnum*2-2)
+				--	(\twidth-.9\unitlength,\thethreadnum*4-1+2.75)-- cycle;
+\node at (\twidth-.9\unitlength,\thethreadnum*4-1+2.75) [below left]{\textbf{transactie3}};
+
+% Instance 3
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,0)+(0,1) node[inststyle] (inst1) {taak2};
+\draw[fill=gray!30] (3.15,\thethreadnum*2-1+\upperhalfbar)
+				-- (3.15,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-3.1\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-3.1\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,1)+(0,2) node[inststyle] (inst3) {taak1};
+\draw[fill=gray!30] (3.15,\thethreadnum*2-1+\upperhalfbar)
+				-- (3.15,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-3.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-3.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+\draw[fill=gray!30] (\twidth-2.15\unitlength,\thethreadnum*2-1+\upperhalfbar)
+				-- (\twidth-2.15\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-1.65\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-1.65\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, above=0.75em] {};
+\path (0,2)+(0,3) node[inststyle] (inst2) {main};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+				-- (2,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\draw[dotted] (2,5)--(2,6.25) node[marker] () {\footnotesize a};
+\draw[dotted] (2.5,5)--(2.5,6.25) node[marker] () {\footnotesize b};
+\draw[dotted] (2.75,5)--(2.75,6.25) node[marker] () {\footnotesize c};
+\draw[dotted] (3,5)--(3,6.25) node[marker] () {\footnotesize d};
+\draw[dotted] (\twidth-3.4\unitlength,3)--(\twidth-3.4\unitlength,6.25) node[marker] () {\footnotesize t};
+\draw[dotted] (\twidth-3.1\unitlength,1)--(\twidth-3.1\unitlength,6.25) node[marker] () {\footnotesize u};
+\draw[dotted] (\twidth-2.65\unitlength,5)--(\twidth-2.65\unitlength,6.25) node[marker] () {\footnotesize v};
+\draw[dotted] (\twidth-2.15\unitlength,5)--(\twidth-2.15\unitlength,6.25) node[marker] () {\footnotesize w};
+%\draw[dotted] (\twidth-1.65\unitlength,1)--(\twidth-1.65\unitlength,6.25) node[marker] () {\footnotesize x};
+%\draw[dotted] (\twidth-1.15\unitlength,3)--(\twidth-1.15\unitlength,6.25) node[marker] () {\footnotesize y};
+\draw[dotted] (\twidth-.9\unitlength,5)--(\twidth-.9\unitlength,6.25) node[marker] () {\footnotesize z};
+
+
+% Result/argument arrows
+%t3
+\node (b) at (2.75,5) {};
+\node (m) at (2.75,1) {};
+\node (e) at (3.25,1) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+%t2
+\node (b) at (3,5) {};
+\node (m) at (3,3) {};
+\node (e) at (3.25,3) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+\draw[decorate,decoration=zigzag] {(\twidth-3.4\unitlength, 3) -- (\twidth-2.65\unitlength,3)}; %t2
+
+\end{tikzpicture}
+
+\begin{lstlisting}[caption={Abort}]
+func optellen tl tl vn tid var x:=2; var y:=3; epsilon is
+start
+	result := x + y;
+	if result < 10
+	then
+		valid := true
+	else
+		valid := false
+	if set_result tl vn result valid tid then
+		skip end_commit_transaction tl tid
+	else
+		skip end_rollback_transaction tl tid
+end;
+func main tl tl vn tid epsilon is
+start
+	start_transaction transactie3
+	main_1:=undef;
+	main_2:=undef;
+	spawn fl:=optellen tl_callee:=taak1 tl_caller:=main vn:=main_1 tid:=transactie3
+		var x:=1; var y:=2; epsilon;
+	spawn fl:=optellen tl_callee:=taak2 tl_caller:=main vn:=main_2 tid:=transactie3
+		var x:=3; var y:=4; epsilon;
+	if wait taak1 then skip else skip;
+	if wait taak2 then skip else skip
+	if collect_votes transactie3 then
+		grand_total := main_1 + main_2;
+		if grand_total < 15 then
+			skip;
+			commit_transaction transactie3
+		else
+			skip;
+			rollback_transaction transactie3
+	else
+		grand_total := 0;
+		rollback_transaction transactie3
+end;
+epsilon
+\end{lstlisting}
+
+\(
+\begin{array}{rl}
+& Executieomgeving \\\hline
+\kw{func1} & s  \\
+\kw{func1} & s  \\
+\kw{func2} & s  \\
+\kw{spawn} & s  \\
+& s \\
+& \\
+& main\marker{a} \\\hline
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}]\\
+\kw{call} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}]\marker{b}\\
+\kw{transaction} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}]\\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}]\\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}]\marker{c}\\
+\kw{spawn} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]\marker{d}\\
+\kw{spawn} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]\\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]\\
+
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}]  \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}]  \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}] \marker{v}  \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}] \marker{w,z} \\
+\kw{rollback} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto \kw{undef}][\kw{main_1}\mapsto 9][\kw{main_2}\mapsto \kw{undef}] \\
+& s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto \kw{undef}][\kw{vn}\mapsto \kw{undef}] \\
+& \\
+& taak1 \\\hline
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 2]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1[\kw{x}\mapsto 2][\kw{y}\mapsto 3]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1]  \\
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4]  \\
+\kw{var2} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5]  \\
+\kw{call} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5]  \\
+\kw{if tt} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9]  \\
+\kw{ass} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \marker{t}  \\
+\kw{if ff} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{true}]  \\
+\kw{skip} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_1][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{true}]  \\
+\kw{end_rollback} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1][\kw{x}\mapsto 4][\kw{y}\mapsto 5][\kw{result}\mapsto 9] \\
+          & \hspace{\sLength}[\kw{valid}\mapsto \kw{true}] \\
+\end{array}
+\)
+
+\(
+\begin{array}{rl}
+		  & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}] \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak1] \\
+& \\
+& taak2 \\\hline
+\kw{var1} & s[\kw{tl}\mapsto \kw{undef}][\kw{tid}\mapsto transactie3][\kw{vn}\mapsto main_2][\kw{main_1}\mapsto \kw{undef}][\kw{main_2}\mapsto \kw{undef}]  \\
+          & \hspace{\sLength}[\kw{tl_caller}\mapsto main][\kw{tl_callee}\mapsto taak2] \\
+          & \textrm{De taak be\"eindigt om onbekende redenen}
+\end{array}
+\)
+
+
+\(taak1\) en \(main\) zijn inderdaad teruggegaan naar de startstate en daarmee is bewezen dat wanneer een abort
+optreedt in een taak, deze door het het systeem goed afgehandeld wordt.

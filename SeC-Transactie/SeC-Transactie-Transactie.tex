@@ -1,0 +1,251 @@
+\Section{Transacties}
+
+In While is de atomaire eenheid van executie de enkelvoudige statement.
+
+Wij breiden While uit met de notie van transacties. \Index[transactie]{Transacties} zijn arbitraire verzamelingen van
+statements die gebundeld worden tot atomaire eenheden. Het speciale van deze verzamelingen is dat ze de eigenschap delen
+dat taken\footnote{Taken kunnen net als het concept van parallellisme individueel voorkomen, dus waar hierboven ``taken''
+genoemd is, kan ook sprake zijn van \'e\'en taak.} die met elkaar verbonden zijn ofwel allemaal slagen ofwel allemaal
+niet slagen. Met slagen wordt hier bedoeld dat het programma naar een volgende state gaat, en met niet slagen
+bedoelen we dat de state van voor de transactie hersteld wordt. In beide gevallen zal het programma verdergaan met de
+statementsequentie. Dat wil zeggen dat er een afhankelijkheid is tussen de taken die gebaseerd is op het kunnen
+verkrijgen van resultaten.
+
+\begin{tikzpicture}
+\setcounter{threadnum}{1}
+
+% Instance 3
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,0)+(0,1) node[inststyle] (inst1) {\(T_3\)};
+\draw[fill=gray!30] (4,\thethreadnum*2-1+\upperhalfbar)
+				-- (4,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-2.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-2.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,1)+(0,2) node[inststyle] (inst3) {\(T_2\)};
+\draw[fill=gray!30] (4,\thethreadnum*2-1+\upperhalfbar)
+				-- (4,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-2.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-2.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, above=0.75em] {};
+\path (0,2)+(0,3) node[inststyle] (inst2) {\(T_1\)};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+				-- (2,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Result/argument arrows
+%t3
+\node (b) at (3.5,5) {};
+\node (m) at (3.5,1) {};
+\node (e) at (4.1,1) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+%t2
+\node (b) at (3.5,5) {};
+\node (m) at (3.5,3) {};
+\node (e) at (4.1,3) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-1.9\unitlength,5+\lowerhalfbar) %b
+									-- (\twidth-1.9\unitlength,.5) % m
+									-- (\twidth-1.4\unitlength,.5) % m'
+									-- (\twidth-1.4\unitlength,5+\lowerhalfbar); %e
+
+\draw[decorate,decoration=zigzag] {(\twidth-2.4\unitlength, 1) -- (\twidth-1.9\unitlength,1)}; %t3
+\draw[decorate,decoration=zigzag] {(\twidth-2.4\unitlength, 3) -- (\twidth-1.9\unitlength,3)}; %t2
+
+\end{tikzpicture}
+
+Een schematische weergave van het concept parallellisme. Er is een hoofdtaak \(T_1\) die ervoor zorgt dat \(T_2\) en
+\(T_3\) ontstaan zodat die zelfstandig berekeningen kunnen uitvoeren. Als de taken klaar zijn is er de mogelijkheid om
+de resultaten te verenigigen.
+
+Transacties voldoen normaliter aan ACID. We leggen de nadruk op ACI, daar waar de durability vooral in praktische
+situaties erg van belang is zoals beschreven in \cite{TransactionConcept}.
+\begin{description}
+\item[Atomair (Atomic)] Dit betekent dat als er een onderdeel van de transactie misgaat, dat de hele transactie
+misgaat. Dit houdt in dat om een transactie te kunnen laten slagen, dat alle taken die betrekking hebben op de
+transactie moeten slagen, en wanneer er een taak niet slaagt, alle taken niet slagen.
+
+Het atomaire slaat dus op de transactie als geheel, aangezien die als eenheid moet worden behandeld.
+\item[Consistent (Consistency)] Consistentie is iets wat afgehandeld kan worden binnen de functies. Omdat While een
+getypeerde taal is, hebben we sowieso al niet te maken met type-fouten. Wel kunnen we domeinfouten ontstaan,
+bijvoorbeeld het banksaldo mag niet onder \(0\) komen; dit moet door de auteur van de functie afgehandeld worden, de
+taal While, en zelfs het programma als geheel, kennen beiden geen domeinbeperkingen.
+
+Gedurende de berekeningen mogen de beperkingen gelaten worden voor wat ze zijn, maar alvorens het aanroepen van
+\kw{set_result} is het de taak van de functie om gecontroleerd te hebben of het resultaat \"uberhaupt geldig is.
+\item[Ge\"isoleerd (Isolated)] Deze eigenschap hebben we erg duidelijk opgenomen in onze specificaties door ervoor te
+zorgen dat variabelen en states nooit ``by reference'' worden meegegeven. Dit zorgt er in essentie voor dat elke taak
+zijn eigen set met variabelen heeft en dat die veranderd kunnen worden zonder dat dit ook maar enig effect heeft op de
+variabelen van andere taken.
+
+Het is natuurlijk wel nodig om resultaten bij elkaar te kunnen laten komen, omdat transacties anders beperkt nut
+hebben. Dit doen wij door gebruik te maken van de executieomgeving die wederom zonder zijeffecten netjes in sommige
+gevallen variabelen in taken aan kan passen zodat bijvoorbeeld resultaten van de door de caller gespawnde taken in de
+caller als resultaat geplaatst kunnen worden.
+\item[Duurzaam (Durability)] Wij houden geen logs bij van welke wijzigingen we wanneer uitgevoerd hebben om welke
+reden. Dit zou je doorgaans wel willen doen wanneer je waarde hecht aan de duurzaamheid.
+
+Om die reden kunnen we ook niet, wanneer de main-taak een abort krijgt, de taak opnieuw opstarten in dezelfde toestand
+als waar hij gebleven was; of opstarten in een geldige toestand, en dan vanuit het log opnieuw dezelfde keuzes maken om
+weer in dezelfde toestand te komen.
+\end{description}
+
+Om transactionele omgevingen te kunnen voorzien van een naam, breiden we de meta-variabelen en syntactische
+categorie\"en uit:
+\begin{equation*}
+\begin{array}{rl}
+  	tid & \textrm{geeft een \Index{transactielabel} aan, \syncat{TransactionLabel}} \\
+\end{array}
+\end{equation*}
+\newpage
+\Subsection{Transactie}
+
+Alle statements binnen een taak en alle taken die gespawnd worden binnen deze taak
+vormen deel van deze transactie. De transactie wordt gestart met \kw{start_transaction}. De transactie wordt afgesloten
+met een \kw{commit_transaction} of een \kw{rollback_transaction}. De taak die een transactie start wordt de
+transactiemanager van de transactie genoemd.
+
+De transactie-omgeving is de verzameling van states en statements van de taken die onderdeel uitmaken van de transactie. Deze
+omgeving is bekend onder zijn transactielabel, \(tid\). De transactielabels zijn globaal bekend.
+
+\begin{functie}{start_transaction $tid$} \\
+\strut\qquad $S'$ \\
+\kw{if} \functienaam{collect_votes} $tid$ \\
+\kw{then} \\
+\strut\qquad \kw{if} $b$ \\
+\strut\qquad \kw{then} \\
+\strut\qquad\qquad $S''$ \\
+\strut\qquad\qquad\functienaam{commit_transaction} $tid$ \\
+\strut\qquad \kw{else} \\
+\strut\qquad\qquad $S'''$ \\
+\strut\qquad\qquad\functienaam{rollback_transaction} $tid$ \\
+\strut\kw{else} \\
+\strut\qquad $S''''$ \\
+\strut\qquad\functienaam{rollback_transaction} $tid$
+\functieomschrijving Omwille van de
+overzichtelijkheid wordt deze functie opgedeeld in vier stukken.
+\end{functie}
+
+\Subsubsection[Starttransactie]{start_transaction}
+\kw{start_transaction} markeert het begin van een transactie.
+
+De enige voorwaarde om een transactie op te kunnen starten is dat het een uniek transactielabel krijgt en het label mag
+niet \kw{undef} zijn.
+
+Bij \kw{start_transaction} wordt een kopie gemaakt van de huidige state, en deze kopie wordt opgeslagen in de state. En
+het transactielabel wordt toegevoegd aan de set met transactielabels.
+
+\begin{functie}{start_transaction $tid$}
+	\functieargument{$tid$: Transactielabel}
+\end{functie}
+
+\Subsubsection[Collectvotes]{collect_votes}
+Verzamelt van alle uitstaande subtaken binnen de transactie het resultaat en als alle resultaten
+\kw{true} zijn, geeft \kw{collect_votes} \kw{true} weer, anders \kw{false}.
+
+Als \kw{collect_votes} wordt aangeroepen voor taken die nog geen \kw{set_result} hebben aangeroepen dan krijgt
+\kw{collect_votes} de waarde \kw{false}.
+
+\begin{functie}{collect_votes $tid$}
+	\functieargument{$tid$: Transactielabel}
+	\functieresultaat{} Levert een \kw{true} op in het geval dat alle statusTaken van alle
+	taken die binnen deze transactie (\(tid\)) opgestart zijn, \kw{true} zijn, \kw{false} anders
+\end{functie}
+
+\Subsubsection[Committransactie]{commit_transaction}
+Alle wijzigingen die binnen de transactie in de state van het programma gemaakt zijn
+worden nu definitief gemaakt en worden behouden. De transactielabel wordt verwijderd en daarmee verdwijnt de
+transactieomgeving.
+
+\kw{commit_transaction} deblokkeert alle \functienaam{set_results} van alle onderliggende deelnemende taken met
+\kw{true}. De functie blokkeert totdat alle eventuele subtaken die onderdeel van de transactie zijn
+\kw{end_commit_transaction} hebben aangroepen ten teken van het feit dat zijn alle statements die noodzakelijk zijn
+om de commit van de transactie voor die taak definitief te maken zijn uitgevoerd.
+
+\begin{functie}{commit_transaction $tid$}
+	\functieargument{$tid$: Transactielabel}
+\end{functie}
+
+\Subsubsection[Rollbacktransactie]{rollback_transaction}
+De state van een taak gaat na een rollback terug naar de opgeslagen state. De statementsequentie gaat niet terug naar
+dat punt, maar gaat verder. De transactielabel wordt verwijderd en daarmee verdwijnt de transactieomgeving.
+
+Deblokkeert alle \functienaam{set_result}s van alle onderliggende deelnemende taken met \kw{false}. Indien dit het geval is
+wordt de huidige state gereset naar een eerder opgeslagen state zoals opgeslagen is door de huidige taak met
+\functienaam{start_transactie}. De functie blokkeert totdat alle eventuele subtaken die onderdeel van de transactie
+zijn \kw{end_rollback_transaction} hebben aangroepen ten teken van het feit dat zijn alle statements die noodzakelijk zijn
+om de rollback van de transactie voor die taak definitief te maken zijn uitgevoerd.
+
+\begin{functie}{rollback_transaction $tid$}
+	\functieargument{$tid$: Transactielabel}
+\end{functie}
+
+\Subsection{Einde van een transactie door een taak}
+
+Als een transactiemanager een \kw{commit_transaction} of \kw{rollback_transaction} uitvoert dan wordt de
+\kw{set_result} van de onderliggende taken gedeblokkeerd, waarna deze de statements behorend bij \kw{true} of \kw{false} uitvoeren.
+Zodra de onderliggende taak daarmee gereed is maakt deze dit via de executieomgeving met behulp van
+\kw{end_commit_transaction} (in het geval van \kw{true}) of \kw{end_commit_transaction} (in het geval van \kw{false})
+bekend.
+
+Zodra alle onderliggende taken het einde van de transactie bekend hebben gesteld zal de \kw{commit_transaction} of
+\kw{rollback_transaction} gedeblokkeerd worden.
+
+\begin{functie}{end_commit/rollback_transaction} \\
+\kw{if}\:\kw{set_result} $tl$ $vn$ $a$ $b$ $tid$ \kw{then} \\
+\strut\qquad S_1\:\kw{end_commit_transaction} $tl$ $tid$  \\
+\strut\kw{else} \\
+\strut\qquad S_2\:\kw{end_rollback_transaction} $tl$ $tid$
+\functieomschrijving De taak die de transactie gestart is wordt via de executeomgeving op de hoogte gesteld van het feit
+dat deze taak alle statements met betrekking tot een commit of rollback heeft uitgevoerd
+
+Omwille van de overzichtelijkheid wordt deze statement opgedeeld in twee stukken
+\end{functie}
+
+\Subsubsection[Committransactie]{end_commit_transaction}
+
+Met behulp van \kw{end_commit_transaction} maakt een taak bekend dat alle statements met betrekking tot een commit zijn
+uitgevoerd.
+
+\begin{functie}{end_commit_transaction $tl$ $tid$}
+	\functieargument{$tl$: Taaklabel}
+	\functieargument{$tid$: Transactielabel}
+\end{functie}
+
+\Subsubsection[Rollbacktransactie]{end_rollback_transaction}
+
+Met behulp van \kw{end_rollback_transaction} maakt een taak bekend dat alle statements met betrekking tot een rollback
+zijn uitgevoerd.
+
+\begin{functie}{end_rollback_transaction $tl$ $tid$}
+	\functieargument{$tl$: Taaklabel}
+	\functieargument{$tid$: Transactielabel}
+\end{functie}
+
+\Subsection[Individueletransactieafhandeling]{Individuele transactieafhandeling}
+De taken zijn verantwoordelijk voor het uitvoeren van een rollback wanneer daar door de caller om gevraagd wordt.
+
+Hoewel in kleine While-programma zonder zijeffecten het nut niet direct zichtbaar is, is er toch voor gekozen om de
+individuele taken verantwoordelijk te stellen voor het verzorgen van hun eigen commit of rollback.
+
+In een echt programma is de caller doorgaans niet op de hoogte van de implementatie van de callee, en daardoor kan de
+caller niets zeggen over de acties die ondernomen moeten worden door de callee bij een commit of een rollback.

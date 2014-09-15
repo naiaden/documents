@@ -1,0 +1,259 @@
+\section{Ontwerpkeuzen}
+We willen het concept van transacties binnen de taal While bekijken. Deze taal kent een hoop beperkingen ten opzichte
+van de echte ``wilde'' programmeertalen, maar het stelt ons ook beter in staat keuzen te maken om ons probleem te
+beperken. We willen graag onderzoeken hoe de semantiek van een transactie er uit ziet en de taal While geeft de
+mogelijkheden niet alleen om de taal uit te breiden, maar geeft ook een testbed om bepaalde situaties te onderzoeken en
+scenario's na te spelen.
+
+\subsection{Elk proces heeft een eigen omgeving}
+
+\begin{tikzpicture}
+	\setlength{\unitlength}{1cm}
+	\tikzstyle{inststyle}=[rectangle, draw, anchor=west, minimum
+	height=0.8cm, minimum width=1.6cm, fill=white,
+	drop shadow={opacity=1,fill=black}]
+\newcounter{threadnum}
+\setcounter{threadnum}{1}
+\global\def\upperhalfbar{0.125}
+\global\def\lowerhalfbar{-\upperhalfbar}
+\global\def\twidth{\textwidth-0.4pt}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node [midway, right=.8\unitlength, below=0.75em] {\(env_2 \vdash (S_1, s_1) \to (S'_1, s'_1)\)};
+\path (0,0)+(0,1) node[inststyle] (inst2) {\(T_2\)};
+\draw[fill=gray!30] (4,\thethreadnum*2-1+\upperhalfbar)
+				-- (4,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-2.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				--	(\twidth-2.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+		-- (\twidth,\thethreadnum*2-1)
+		node[midway, right=.8\unitlength, above=0.75em] {\(env_1 \vdash (S, s) \to (S', s')\)};
+\path (0,1)+(0,2) node[inststyle] (inst1) {\(T_1\)};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+				-- (2,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				-- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Result/argument arrows
+\path (4,3) node (b) {}
+	(4,1) node (e) {};
+\draw[->,>=angle 60] (b) -- (e) node[midway, left] {\small argument};
+
+\path (\twidth-2.4cm,3) node (e) {}
+	(\twidth-2.4cm,1) node (b) {};
+\draw[->,>=angle 60] (b) -- (e) node[midway, right] {\small resultaat};
+
+\end{tikzpicture}
+
+Het effect dat we hiermee willen cre\"eren is dat we een zogenaamde zwakke taal krijgen. Wat er in essentie gebeurt is
+dat elke thread een eigen stukje geheugen krijgt en dat andere threads geen geheugen aan kunnen spreken behalve hun
+eigen geheugen. Dit heeft niet alleen als voordeel dat het makkelijker te implementeren is, maar het haalt ook het
+ingewikkelde concept van races weg.
+
+Andere gevolgen hiervan zijn dat argumenten altijd by value meegegeven worden, want als ze bij reference meegegeven
+zouden worden, dan zou je in andermans geheugen kunnen wroeten. Maar ook de voorspelbaarheid van het programma is
+hoger, aangezien je van elk moment kunt overzien wat de geheugeninhouden zijn en je weet wie welk geheugen aan kan
+passen.
+
+\section{Onderwerpen}
+Omdat het concept van transacties dat we willen onderzoeken binnen de taal While de nodige uitbreidingen nodig heeft,
+moeten we eerst de taal uitbreiden. Daar hebben we minstens drie concepten voor nodig:
+
+\begin{itemize}
+\item Functies met return values en argument passing
+\item Parallellisme
+\item Transacties
+\end{itemize}
+
+Het initiele plan is om de concepten  in deze volgorde uit te breiden. Hierbij zullen we in eerste instantie telkens
+voor een minimale oplossing te kiezen en op basis van noodzakelijkheid en opportunisme te kiezen voor eventuele
+uitbreidingen.
+
+\subsection{Functies, return values en argumenten}
+Parallellisme is eigenlijk niet interessant als er geen informatie doorgegeven kan worden, dat betekent dat resultaten
+nooit bij elkaar kunnen komen (in onze situatie althans). Om dit te ondervangen is het nodig dat er zowel argumenten
+meegegeven kunnen worden aan een functie alsmede dat er resultaten teruggegeven kunnen worden.
+
+Onder een functie verstaan wij een een tuple met:
+\begin{itemize}
+\item Return values van de callees
+\item Naam van de functie
+\item N argumenten
+\end{itemize}
+
+Een functie is essentie \'e\'en of meer statements die door een label kunnen worden aangeroepen: vergelijk het concept
+van procedure zoals in de colleges behandeld.
+
+Van functies kennen we twee typen:
+\begin{description}
+\item[Synchrone functies] Deze functies worden aangeroepen en de caller wacht tot de functie returnt met het
+uitvoeren van de volgende statement
+\item[Asynchrone functies] Deze functies worden aangeroepen en de caller gaat meteen door met het uitvoeren van het
+volgende statement
+\end{description}
+Bij het aanroepen van een functie wordt door het systeem in de environment van de caller een variabele aangemaakt met
+een door de caller te bepalen naam. De callee is op de hoogte van het type en de naam. De initiele state van de
+variabele zal die van ``niet geinitialiseerd'' zijn. De callee zal (op enig moment in tijd) de voorgenoemde variabele
+initialiseren en gelijktijdig daarmee van een waarde voorzien. Als de caller de variabele opvraagt in een statement
+(bijvoorbeeld door assignment met een locale of globale variabele, of door de variabele te gebruiken bij een functie
+call) \inlinecomment{\ldots deze zin is niet af}. Als een variabele gebruikt wordt in de de state ``niet
+geinitialiseerd,'' zal de gebruiker blokken totdat de variabele ge\"initialiseerd is. Als een functie be\"eindigd wordt voor dat een
+return value kan worden ge\"initialiseerd zal de variabele een speciale waarde hebben die aangeeft dat niet
+ge\"initialiseerd is. \inlinecomment{\ldots analoog aan het exceptie mechanisme???}
+
+
+\tikzstyle{every picture}+=[remember picture]
+
+Hieronder een voorbeeld om de overdracht van return values te illustreren. Op het moment dat de callee geen OK gegeven
+heeft is dit de situatie:
+
+functienaam(argument\(_1\), argument\(_2\), \ldots, returnvalue voor callee\(_1\),
+\tikz[baseline]{
+            \node[fill=red!20, ellipse,anchor=base] (rv1)
+            {};
+        }
+,\ldots, returnvalue voor callee\(_n\))
+
+Callee\(_2\): \tikz[baseline]\node [fill=red!20, ellipse,anchor=base] (n1) {}; (Nog geen resultaat dus)
+
+Als de callee een OK geeft, dan is hij dus klaar met zijn berekeningen en is het resultaat klaar om door anderen
+opgepikt te worden. Dit gebeurd middels een functieaanroep naar de caller, waarmee hij in een speciaal gereserveerd
+stukje geheugen zijn resultaat neer mag zetten:
+
+functienaam(argument\(_1\), argument\(_2\), \ldots, returnvalue voor callee\(_1\),
+\tikz[baseline]{
+            \node[fill=red!20, ellipse,anchor=base] (rv2)
+            {resultaat};
+        }
+,\ldots, returnvalue voor callee\(_n\))
+
+Callee\(_2\): \tikz[baseline]\node [fill=red!20, ellipse,anchor=base] (n2) {resultaat};
+
+\begin{tikzpicture}[overlay]
+        \path[->] (n2) edge [bend right=10] (rv2);
+\end{tikzpicture}
+
+\subsection{Parallellisme}
+Zonder parallellisme is het concept van transactie erg beperkt, aangezien je dan gewoon alleen een state hoeft te
+bewaren waar je op terug zou willen kunnen vallen. Parallellisme maakt het juist interessant omdat er nu nesting
+mogelijk is, en races een bepaalde rol kunnen gaan spelen.
+
+Parallellisme is het gelijktijdig uitvoeren van een aantal statements. In While wordt een serie van sequentiele
+statements aangeduid als programma. In onze uitbreiding wordt een dergelijke sequentie aangeduid als taak: een taak is
+een functie die onafhankelijk van andere taken wordt uitgevoerd en die een result value oplevert in de de environment
+van de taak die de taak heeft opgestart.
+
+Onderdeel van parallellisme is synchronisatie: het moet mogelijk zijn om de parallelle taken te synchroniseren. Dat
+betekent dat wij in de uitbreidingen van While primitieven zullen opnemen die dat mogelijk maken.
+
+Aan het einde van de uitvoering van een taak zijn er drie mogelijke situaties die op kunnen treden:
+\begin{description}
+  \item[OK] De taak is klaar met het uitvoeren van zijn statements en heeft een geldige waarde om terug te geven
+  \item[NOK] De taak is klaar met het uitvoeren van zijn statements, maar heeft onderweg een situatie meegemaakt die er
+  voor zorgde dat er geen geldig resultaat teruggegeven kan worden. Die situatie is niet gedefinieerd, maar is in elk
+  geval geen uitval (zie volgende punt)
+  \item[DNF] Tijdens het uitvoeren van de statements is er een interrupt geweest waardoor de taak wegviel. De
+  uitvoering van statements stopte op dat moment, en er is geen resultaat
+\end{description}
+
+\subsection{Transacties}
+Een transactie wordt gevormd door een aantal statements die gezamenlijk de state van een programma wijzigen. Als bij het
+uitvoeren van de statements blijkt dat een van de statements niet kan worden uitgevoerd dan worden alle gevolgen van de
+statements teruggedraaid naar de state van voor de transactie.
+
+In dit stuk gaan we ervan uit dat er altijd sprake is van een expliciet ``start'', ``commit'' en ``rollback'' van een
+transactie.
+
+Een transactie heeft de volgende kenmerken (ACID, \url{http://nl.wikipedia.org/wiki/ACID}):
+\begin{itemize}
+\item Atomair
+\item Consistent
+\item Ge\"isoleerd
+\item Duurzaam
+\end{itemize}
+
+Direct voor de start van de transactie en direct na het beeindigen van een transactie gelden alle integriteitsregels van
+het programma (axiomatische semantiek?))
+
+\begin{tikzpicture}
+	\setlength{\unitlength}{1cm}
+	\tikzstyle{inststyle}=[rectangle, draw, anchor=west, minimum
+	height=0.8cm, minimum width=1.6cm, fill=white,
+	drop shadow={opacity=1,fill=black}]
+\setcounter{threadnum}{1}
+\global\def\upperhalfbar{0.125}
+\global\def\lowerhalfbar{-\upperhalfbar}
+\global\def\twidth{\textwidth-0.4pt}
+
+% tijdlijn met acties
+\draw[dashed] (3.5,0) -- (3.5, 5.5) node[above] {Start Transacties};
+\draw[dashed] (\twidth-1.9\unitlength,0) -- (\twidth-1.9\unitlength, 5) -- (\twidth-1.9\unitlength,5) --
+(\twidth-2.5\unitlength, 5.5) node[above left=-1.79pt] {Start Polling};
+\draw[dashed] (\twidth-1.4\unitlength,0) --
+(\twidth-1.4\unitlength, 5.5) node[above] {Tel Stemmen};
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+           -- (\twidth,\thethreadnum*2-1)
+           node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,0)+(0,1) node[inststyle] (inst1) {\(T_3\)};
+\draw[fill=gray!30] (4,\thethreadnum*2-1+\upperhalfbar)
+                 -- (4,\thethreadnum*2-1+\lowerhalfbar)
+				 -- (\twidth-2.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				 --	(\twidth-2.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Instance 2
+\draw[dotted] (0,      \thethreadnum*2-1)
+           -- (\twidth,\thethreadnum*2-1)
+           node [midway, right=.8\unitlength, below=0.75em] {};
+\path (0,1)+(0,2) node[inststyle] (inst3) {\(T_2\)};
+\draw[fill=gray!30] (4,\thethreadnum*2-1+\upperhalfbar)
+                 -- (4,\thethreadnum*2-1+\lowerhalfbar)
+				 -- (\twidth-2.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+				 --	(\twidth-2.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Thread 1
+\draw[dotted] (0,      \thethreadnum*2-1)
+           -- (\twidth,\thethreadnum*2-1)
+           node [midway, right=.8\unitlength, above=0.75em] {};
+\path (0,2)+(0,3) node[inststyle] (inst2) {\(T_1\)};
+\draw[fill=gray!30] (2,\thethreadnum*2-1+\upperhalfbar)
+                 -- (2,\thethreadnum*2-1+\lowerhalfbar)
+			     -- (\twidth-.4\unitlength,\thethreadnum*2-1+\lowerhalfbar)
+			     -- (\twidth-.4\unitlength,\thethreadnum*2-1+\upperhalfbar)-- cycle;
+
+\stepcounter{threadnum}
+
+% Result/argument arrows
+\node (b) at (3.5,5) {};
+\node (m) at (3.5,1) {};
+\node (e) at (4.1,1) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+\node (b) at (3.5,5) {};
+\node (m) at (3.5,3) {};
+\node (e) at (4.1,3) {};
+\draw[->,>=angle 60] (b) |- (m) -- (e) node {};
+
+\draw[->,>=angle 60,rounded corners=5pt] (\twidth-1.9\unitlength,5+\lowerhalfbar) %b
+                                      -- (\twidth-1.9\unitlength,.5) % m
+                                      -- (\twidth-1.4\unitlength,.5) % m'
+                                      -- (\twidth-1.4\unitlength,5+\lowerhalfbar); %e
+
+\draw[decorate,decoration=zigzag] {(\twidth-2.4\unitlength, 1) -- (\twidth-1.9\unitlength,1)};
+\draw[decorate,decoration=zigzag] {(\twidth-2.4\unitlength, 3) -- (\twidth-1.9\unitlength,3)};
+
+\end{tikzpicture}
+

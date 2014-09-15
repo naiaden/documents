@@ -1,0 +1,171 @@
+% Semantiek en Correctheid werkstuk over transacties
+%
+% 2009
+\documentclass[twoside,fleqn]{artikel3}
+
+\title{Transacties in While}
+\author{Mehdi Aqadjani Memar, Joost Kraaijeveld, Louis Onrust}
+
+\usepackage{amsmath}
+\usepackage{semantic} % Voor documentatie kijk hier: http://tug.ctan.org/tex-archive/macros/latex/contrib/semantic/
+\usepackage[dutch]{babel}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows,shadows,decorations.pathmorphing,shapes}
+\usepackage{listings}
+\usepackage{multicol}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{dsfont}
+\usepackage{color}
+\usepackage{ifthen}
+\usepackage[hmargin=2.5cm,vmargin=3.5cm]{geometry}
+\usepackage{byname}
+\usepackage{marginnote}
+\usepackage{boxedminipage}
+\usepackage{makeidx}
+\usepackage{underscore}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyfoot{} % clear all footer fields
+\fancyfoot[LE,RO]{\thepage}
+
+
+\bibliographystyle{apalike}
+
+\newenvironment{functie}[1]{
+\begin{boxedminipage}[t]{\textwidth}
+\vspace{-.25em}\textbf{#1}\vspace{.25em}
+}{\end{boxedminipage}}
+
+\newcommand\functielabel[1]{\textit{#1}}
+\newcommand\inlinecomment[1]{{\color{red}#1}}
+\newcommand\syncat[1]{\textbf{#1}}
+\newcommand\functienaam[1]{\kw{#1}}
+\newcommand\functiebody[1]{\newline $\rightarrow$ \textsl{#1} }
+\newcommand\functievariabele[1]{\text#1}
+\newcommand\functieargument[1]{\newline $\rightarrow$ \textsl{#1} }
+\newcommand\functieresultaat[1]{\newline $\leftarrow$ \textsl{#1} }
+\newcommand\functieopmerking{\newline{}\newline\(\textrm{\underline{Opmerking}}\): }
+\newcommand\functieomschrijving{\newline\strut\newline}
+\newcommand\osstep[3]{\ensuremath{\langle#2\rangle
+						=>\ifthenelse{\equal{#1}{def}}{}{_{#1}}
+						\ifthenelse{\equal{#3}{s}}
+							{s}
+							{ %else
+							\ifthenelse{\equal{#3}{s'}}
+								{s'}
+								{ %else
+								\langle#3\rangle
+								}
+							}}
+						} % type lhs rhs
+\newcommand\kw[1]{\textnormal{\texttt{#1}}} % keyword
+\newcommand\var[1]{\textnormal{\textsl{#1}}} % variable
+\newcommand\Index[2][def]{#2\ifthenelse{\equal{#1}{def}}{\index{#2}}{\index{#1}}}
+\newcommand\Section[2][def]{\section{#2}\ifthenelse{\equal{#1}{def}}{\label{sec:#2}}{\label{sec:#1}}}
+\newcommand\Subsection[2][def]{\subsection{#2}\ifthenelse{\equal{#1}{def}}{\label{ssec:#2}}{\label{ssec:#1}}}
+\newcommand\Subsubsection[2][def]{\subsubsection{#2}\ifthenelse{\equal{#1}{def}}{\label{sssec:#2}}{\label{sssec:#1}}}
+\renewcommand\emph[1]{\textbf{#1}}
+\renewcommand\lstlistingname{Functie}
+\renewcommand\thepart{\Alph{part}}
+\renewcommand\thesection{\thepart\ \arabic{section}}
+
+\lstdefinelanguage{trans}{
+	morekeywords={
+		func,is,spawn,wait,var,
+		if,then,else,
+		true,false,undef,
+		start,end,set\_result,
+		start\_transaction,collect\_votes,
+		commit\_transaction,rollback\_transaction
+	},
+	otherkeywords={
+		=, :=, ::=, <, +, ;
+	},
+	sensitive=false,
+	literate={ epsilon }{{$\epsilon$}}1 ,
+}
+\lstset{
+	basicstyle=\small,
+	keywordstyle=\bfseries,
+	tabsize=2,
+	language={trans},
+}
+
+\let\itemOld\item % boldface math in \item's too
+\makeatletter
+\@addtoreset{section}{part}
+\renewcommand\item[1][]{%
+	\def\@tempa{#1}
+	\ifx\@tempa\@empty\itemOld\else\boldmath\itemOld[#1]\unboldmath\fi%
+}
+\def\maketitle{\Huge\@title\vspace{.35em}\newline\normalfont\Large\@author\normalsize}
+\makeatother
+
+\newcommand\markers[1]{%
+\marginnote{%
+\vspace{-2cm}%
+\begin{tikzpicture}[remember picture,yshift=1cm]%
+\pgfsetbaseline{40pt}
+\draw (0,1) node[] (inNode) {\hspace{-2.5cm}#1};%
+\draw (-1.5,1) -- (-2.5,1);%
+\end{tikzpicture}%
+}%
+}%
+
+\newlength{\sLength}
+\settowidth{\sLength}{$s$}
+\newlength{\maxFunctionLength}
+\settowidth{\maxFunctionLength}{\texttt{end\_rollback}}
+
+\newcommand\marker[1]{%
+\marginnote{%
+\vspace{-2cm}%
+\begin{tikzpicture}[remember picture,yshift=1cm]%
+\pgfsetbaseline{40pt}
+\draw (0,1) node[] (inNode) {\hspace{2.5cm}#1};%
+\draw (1.5,1) -- (2.5,1);%
+\end{tikzpicture}%
+}%
+}%
+
+\newcounter{threadnum}
+\global\def\upperhalfbar{0.125}
+\global\def\lowerhalfbar{-\upperhalfbar}
+\global\def\twidth{\textwidth-0.4pt}
+\setlength{\unitlength}{1cm}
+\tikzstyle{inststyle}=[rectangle, draw, anchor=west, minimum
+height=0.8cm, minimum width=1.6cm, fill=white,
+drop shadow={opacity=1,fill=black}]
+\tikzstyle{marker}=[anchor=base]
+
+\makeindex
+
+% Elk hoofdstuk krijgt een eigen \input.
+\begin{document}
+
+\input{SeC-Transactie-Titel}
+\input{SeC-Transactie-Inleiding}
+
+\part{Uitbreidingen}
+\input{SeC-Transactie-Executieomgeving}
+\newpage\input{SeC-Transactie-Functie}
+\input{SeC-Transactie-Parallellisme}
+\input{SeC-Transactie-Transactie}
+
+\part{Formalisatie}
+\input{SeC-Transactie-Syntax}
+\input{SeC-Transactie-Semantiek}
+
+\part{Programma}
+\input{SeC-Transactie-Programma}
+\input{SeC-Transactie-Bewijs}
+
+\input{SeC-Transactie-Conclusie}
+\bibliography{SeC-Transactie}
+
+%\input{SeC-Transactie-Voortgangsbespreking1}
+
+\end{document}
+

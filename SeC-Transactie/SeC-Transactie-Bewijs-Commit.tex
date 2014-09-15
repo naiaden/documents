@@ -1,0 +1,20 @@
+% \multirow{2}{*}{spawn}
+% & s \\
+% & $ $ \\
+% \end{longtable}
+
+\section{Commit}
+\begin{longtable}{r|p{12cm}}
+\multirow{2}{*}{func1}
+& s \\
+& $func optellen tl tl vn tid var x:=2; var y:=3; epsilon is start \ldots end; func main \ldots end; epsilon$ \\
+\multirow{2}{*}{func1}
+& s \\
+& $func main tl tl vn tid epsilon is start start_transaction transactie1 main_1:=undef; main_2:=undef; spawn fl:=optellen tl_callee:=taak1 tl_caller:=main vn:=main_1 tid:=transactie1 var x:=1; var y:=2; epsilon; spawn fl:=optellen tl_callee:=taak2 tl_caller:=main vn:=main_2 tid:=transactie1 var x:=3; var y:=4; epsilon; if wait taak1 then skip else skip; if wait taak2 then skip else skip if collect_votes transactie1 then grand_total := main_1 + main_2; if grand_total < 15 then skip; commit_transaction transactie1 else skip; rollback_transaction transactie1 else grand_total := 0; rollback_transaction transactie1 end; epsilon$ \\
+\multirow{2}{*}{func2}
+& s \\
+& $epsilon$ \\
+\multirow{2}{*}{spawn}
+& s \\
+& $spawn fl:=main tl_callee:=main tl_caller:=undef vn:=undef tid:=undef epsilon$ \\
+\end{longtable}

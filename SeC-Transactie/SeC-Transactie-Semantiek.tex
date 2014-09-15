@@ -1,0 +1,472 @@
+\Section{Semantiek}
+
+% \inference[$TR_{commit}$]{ ST id S; action cv; if action commit esle rollback, s ->{co} s' }{niets -> niets}
+% \inference[$TR_{rollback}$]{ ST id S; action cv; $if(action)$ commit $esle$ rollback, s ->{ro} s' }{niets -> niets}
+
+\Subsection{Parallelliteitsoperator}
+Om het concept van parallelle taken in While te kunnen introduceren moet er een symbool bedacht worden om dit aan te
+geven. Er is gekozen om gebruik te maken van \(\parallel\). Dit symbool geeft aan dat er parallelle paden van executie
+plaatsvinden. Anders dan in de While-uitbreiding met parallelisme werken taken echt parallel zonder de notie van
+interleaving.
+
+Het programma gaat verder met de state die ontstaan is door \kw{spawn}. \[ \gamma \parallel \gamma' \]
+
+\(\gamma\) is de configuratie waarmee het programma verder gaat, dit is dus altijd een state. \(\gamma'\) is van de vorm
+\(\langle S,\:s\rangle\); \(\gamma'\) is dus de parallelle taak.
+
+\Subsection{Undef}
+\kw{\Index{undef}} is een speciale waarde die aangeeft dat de waarde van de variabele buiten het domein. Zo is
+bijvoorbeeld de waarde van de returnvalue van een functie nog niet bekend, terwijl de variabele al wel gedeclareerd moet
+zijn.
+
+\kw{undef} kan gebruikt voor de volgende situaties:
+\begin{itemize}
+\item Variabelen die \kw{undef} zijn kunnen voor niets anders gebruikt worden dan het testen op het zijn van \kw{undef} en het
+voorzien van een waarde
+\item Elk ander gebruik van een variabele die \kw{undef} is leidt tot een abort
+\end{itemize}
+
+\Subsection[Assignmentsvanbooleans]{Uitbreiding van booleans}
+In de syntax zijn een viertal booleaanse expressies toegevoegd: \kw{wait}, \kw{set_result} (met en zonder $tid$) en
+\kw{collect_votes}. Hoewel deze expressies sterke gelijkenissen vertonen met statements of functies, is er voor gekozen om ze van het type
+booleaanse expressie te maken omdat ze niets wijzigen aan de state van de caller.
+
+Omdat de state van een taak opzichzelf er niet toe doet voor de waarde die \kw{set_result}, \kw{wait} of
+\kw{collect\_votes} toegewezen krijgt, moet er een semantiek zijn die de semantiek uit While uitbreidt, maar wel een
+constructie toestaat om als het ware te abstraheren van de state die op moment dat de functie wordt aangeroepen geldt
+voor die taak. Dit hebben we opgelost door een functie \(\mathcal{B'}\) te introduceren. Deze functie \(\mathcal{B'}\)
+is alleen gedefinieerd voor de drie eerdergenoemde functies.
+
+Voor de standaardmanier van het converteren naar een boolean wordt de functie \(\mathcal{B}\) gebruikt, en voor de drie
+functies levert deze een aanroep aan naar de nieuwe functie \(\mathcal{B'}\) aan met hetzelfde argument:
+\begin{align*}
+\mathcal{B}|[\kw{set_result}\:tl\:fl\:x\:a\:b|] s &=
+\begin{cases}
+\kw{tt}  & \text{als }\mathcal{B'}|[\kw{set_result}\:tl\:fl\:x\:a\:b|] = \kw{true}\\
+\kw{ff} & \text{als }\mathcal{B'}|[\kw{set_result}\:tl\:fl\:x\:a\:b|] = \kw{false}\\
+\end{cases} \\
+\mathcal{B}|[\kw{set_result}\:tl\:fl\:x\:a\:b\:tid|] s &=
+\begin{cases}
+\kw{tt}  & \text{als }\mathcal{B'}|[\kw{set_result}\:tl\:fl\:x\:a\:b\:tid|] = \kw{true}\\
+\kw{ff} & \text{als }\mathcal{B'}|[\kw{set_result}\:tl\:fl\:x\:a\:b\:tid|] = \kw{false}\\
+\end{cases} \\
+\mathcal{B}|[\kw{wait}\:tl|] s &=
+\begin{cases}
+\kw{tt}  & \text{als }\mathcal{B'}|[\kw{wait}\:tl|] = \kw{true}\\
+\kw{ff} & \text{als }\mathcal{B'}|[\kw{wait}\:tl|] = \kw{false}\\
+\end{cases} \\
+\mathcal{B}|[\textnormal{\kw{collect_votes}}\:tid|] s &=
+\begin{cases}
+\kw{tt}  & \text{als }\mathcal{B'}|[\textnormal{\kw{collect_votes}}\:tid|] = \kw{true}\\
+\kw{ff} & \text{als }\mathcal{B'}|[\textnormal{\kw{collect_votes}}\:tid|] = \kw{false}\\
+\end{cases} \\
+\end{align*}
+De executieomgeving zal nu, aan de hand van alles wat bij de executieomgeving bekend is, een waarde
+toekennen aan de functie zodanig dat:
+\begin{align*}
+\mathcal{B'}|[\kw{set_result}\:tl\:fl\:x\:a\:b|] &=
+\begin{cases}
+\kw{true}  & \text{als $b$ = \kw{true}}\\
+\kw{false} & \text{als $b$ = \kw{false}}\\
+\end{cases} \\
+\mathcal{B'}|[\kw{set_result}\:tl\:fl\:x\:a\:b\:tid|] &=
+\begin{cases}
+\kw{true}  & \text{als commit_transaction is aangeroepen}\\
+\kw{false} & \text{als rollback_transaction is aangeroepen}\\
+\kw{true}  & \text{anders}
+\end{cases} \\
+\mathcal{B'}|[\kw{wait}\:tl|] &=
+\begin{cases}
+\kw{true}  & \text{als set_result van \(tl\) gezet is met \kw{true}}\\
+\kw{false} & \text{anders}
+\end{cases} \\
+\mathcal{B'}|[\textnormal{\kw{collect_votes}}\:tid|] &=
+\begin{cases}
+\kw{true}  & \text{als set_result van alle \(tl\) binnen \(tid\) gezet is met \kw{true}} \\
+\kw{false} & \text{anders}
+\end{cases}
+\end{align*}
+
+\Subsection{Hulpfuncties}
+
+Op divers plaatsen maken we gebruik van lokale en globale lijsten van variabelen. Om deze lijsten te kunnen
+administreren maken we gebruik van diverse hulp functies om elementen toe te voegen, op te vragen en te verwijderen.
+
+\Subsubsection{FunctieLabel}
+
+\(\mathrm{GLOBFL}(FL)\) is de globale lijst van functies  hun (default) \(D_V\) en bijbehorende statements.
+
+Om een functie toe te voegen aan de globale lijst met functies gebruiken we de functie \kw{GLOBFL}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBFL}\right]&&
+\langle\kw{GLOBFL}\:\kw{func}\:fl\:D_V\:S \:;\:D_F,\:s\rangle => s\\
+\end{eqnarray*}
+
+Het toevoegen van een functie gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBFL}(\kw{func}\:fl\:D_V\:S \:;\:D_F) &=& \{\{fl,D_V,S\}\}\cup\mathrm{GLOBFL}(FL) \\
+	\kw{GLOBFL}(\epsilon) &=& \mathrm{GLOBFL}(FL)
+\end{eqnarray*}
+
+\Subsubsection{TaskLabel}
+
+Er worden twee soorten lijsten van taaklabels bijgehouden. De executieomgeving houdt een globale lijst van alle
+taaklabels bij terwijl een taak een lokale lijst met gespawnde taken bijhoudt.
+
+\(\mathrm{GLOBTL}(TL)\) is de globale lijst van taaklabels.
+
+Om een taaklabel toe te voegen aan de globale lijst met taaklabels van alle taken gebruiken we de functie \kw{GLOBTL}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBTL}\right]&&
+\langle\kw{GLOBTL}\:tl,\:s\rangle => s\\
+\end{eqnarray*}
+
+Het toevoegen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBTL}(tl) &=& \{tl\}\cup\mathrm{GLOBTL}(TL) \\
+\end{eqnarray*}
+
+Om een taaklabel te verwijderen uit de globale lijst met taaklabels van alle taken gebruiken we de functie
+\kw{GLOBTL'}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBTL'}\right]&&
+\langle\kw{GLOBTL'}\:tl,\:s\rangle => s\\
+\end{eqnarray*}
+
+Het verwijderen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBTL'}(tl) &=& {GLOBTL}(TL) \setminus \{tl\} \\
+\end{eqnarray*}
+
+\(\mathrm{LOCTL}(TL)\) is de lokale lijst van gespawnde taken.
+
+Om een taaklabel toe te voegen aan de lokale lijst met taaklabels met gespawnde taken gebruiken we de functie
+\kw{LOCTL}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{LOCTL}\right]&&
+\langle\kw{LOCTL}\:tl,\:s\rangle => s'\\
+\end{eqnarray*}
+
+Het toevoegen gaat als volgt:
+\begin{eqnarray*}
+	\kw{LOCTL}(tl)\:s &=& \{tl\}\cup\mathrm{LOCTL}(TL) \\
+\end{eqnarray*}
+
+Om een taaklabel te verwijderen uit de lokale lijst met taaklabels met gespawnde taken gebruiken we de functie
+\kw{LOCTL'}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{LOCTL'}\right]&&
+\langle\kw{LOCTL'}\:tl,\:s\rangle => s'\\
+\end{eqnarray*}
+
+Het verwijderen gaat als volgt:
+\begin{eqnarray*}
+	\kw{LOCTL'}(tl)\:s &=& {LOCTL}(TL) \setminus \{tl\} \\
+\end{eqnarray*}
+
+\Subsubsection{TransactionLabel}
+
+Er worden twee soorten lijsten van transactielabels bijgehouden. De executieomgeving houdt een globale lijst van
+alle transactielabels bij terwijl een taak een lokale lijst met transactielabels van de taak zelf bijhoudt.
+
+\(\mathrm{GLOBTID}(TID)\) is de globale lijst van transactielabels.
+
+Om de transactielabel toe te voegen aan de globale lijst met transactielabel gebruiken we de functie \kw{GLOBTID}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBTID}\right]&&
+\langle\kw{GLOBTID}\:tid,\:s\rangle => s
+\end{eqnarray*}
+
+Het toevoegen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBTID}(tid) &=& \{tid\}\cup\mathrm{GLOBTID}(TID) \\
+\end{eqnarray*}
+
+Om de transactielabel te verwijderen uit de globale lijst met transactielabel gebruiken we de functie
+\kw{GLOBTID'}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBTID'}\right]&&
+\langle\kw{GLOBTID'}\:tid,\:s\rangle => s
+\end{eqnarray*}
+
+Het verwijderen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBTID'}(tid) &=& \kw{GLOBTID}(TID) \setminus \{tid\} \\
+\end{eqnarray*}
+
+
+\(\mathrm{LOCTID}(TID)\) is de lokale lijst van transactielabels.
+
+Om de transactielabel toe te voegen aan de lokale lijst met transactielabel gebruiken we de functie \kw{LOCTID}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{LOCTID}\right]&&
+\langle\kw{LOCTID}\:tid,\:s\rangle => s'
+\end{eqnarray*}
+
+Het toevoegen gaat als volgt:
+\begin{eqnarray*}
+	\kw{LOCTID}(tid) &=& \{tid\}\cup\mathrm{LOCTID}(TID) \\
+\end{eqnarray*}
+
+Om de transactielabel te verwijderen uit de lokale lijst met transactielabel gebruiken we de functie
+\kw{LOCTID'}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{LOCTID'}\right]&&
+\langle\kw{LOCTID'}\:tid,\:s\rangle => s'
+\end{eqnarray*}
+
+Het verwijderen gaat als volgt:
+\begin{eqnarray*}
+	\kw{LOCTID'}(tid) &=& \mathrm{LOCTID}(TID) \setminus \{tid\} \\
+\end{eqnarray*}
+
+%\Subsubsection{VariableName}
+
+\Subsubsection{State}
+
+\(\mathrm{GLOBSTATE}(STATE)\) is de globale lijst van states.
+
+Om een state toe te voegen aan de globale lijst met states gebruiken we de functie \kw{GLOBSTATE}.
+
+De semantiek van de
+functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBSTATE}\right]&&
+\langle\kw{GLOBSTATE}\:tl\:tid\:s',\:s\rangle => s
+\end{eqnarray*}
+
+Het toevoegen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBSTATE}(tl\:tid,\:s) &=& \{tl,tid,s\}\cup\mathrm{GLOBSTATE}(STATE) \\
+\end{eqnarray*}
+
+Om een state op te vragen uit de globale lijst met states gebruiken we de functie
+\kw{GLOBSTATE''}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBSTATE''}\right]&&
+\langle\kw{GLOBSTATE''}\:tl\:tid\rangle => s
+\end{eqnarray*}
+
+Het opvragen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBSTATE''}(tl\:tid) &=& \{tl,tid,s\} \\
+\end{eqnarray*}
+
+Om een state toe te verwijderen uit de globale lijst met states gebruiken we de functie
+\kw{GLOBSTATE'}.
+
+De semantiek van de functie is:
+\begin{eqnarray*}
+\left[\kw{GLOBSTATE'}\right]&&
+\langle\kw{GLOBSTATE'}\:tl\:tid,\:s\rangle => s
+\end{eqnarray*}
+
+Het verwijderen gaat als volgt:
+\begin{eqnarray*}
+	\kw{GLOBSTATE'}(tl\:tid) &=& \kw{GLOBSTATE}(STATE) \setminus \{tl,tid,s\} \quad \textrm{Waar \(s\) = \kw{GLOBSTATE''}
+	(\(tl\) \(tid\))}\\
+\end{eqnarray*}
+
+\Subsection{Statements}
+
+We nemen de bestaande statements uit While over en voegen daar onze statements aan toe. Vanuit While nemen we over:
+\begin{eqnarray*}
+\left[\kw{ass}\right]&& \langle x:=a.\:s\rangle=>s[x\mapsto\mathcal{A}|[a|]s] \\
+\left[\kw{skip}\right]&& \osstep{}{\kw{skip},\:s}{s} \\
+\left[\kw{comp}^1\right]&& \inference{\osstep{}{S_1,\:s}{S'_1,\:s'}}{\osstep{}{S_1\:;\:S_2,\:s}{S'_1\:S_2,\:s'}}\\
+\left[\kw{comp}^2\right]&& \inference{\osstep{}{S_1,\:s}{s'}}{\osstep{}{S_1\:;\:S_2,\:s}{S_2,\:s'}}\\
+\left[\kw{if}^{\kw{true}}\right]&& \osstep{}{\kw{if}\:b\:\kw{then}\:S_1\:\kw{else}\:S_2,\:s}{S_1,\:s}\:\text{ Als
+\(\mathcal{B}|[b|]s = \kw{tt}\)} \\
+\left[\kw{if}^{\kw{false}}\right]&&\osstep{}{\kw{if}\:b\:\kw{then}\:S_1\:\kw{else}\:S_2,\:s}{S_2,\:s}\:\text{ Als
+\(\mathcal{B}|[b|]s = \kw{ff}\)} \\
+\left[\kw{while}\right]&&
+\osstep{}{\kw{while}\:b\:\kw{do}\:S,\:s}{\kw{if}\:b\:\kw{then}\:(S\:;\:\kw{while}\:b\:\kw{do}\:S)\:\kw{else}\:\kw{skip},\:s}
+\end{eqnarray*}
+En we voegen daar de statements uit de volgende paragrafen aan toe.
+
+\Subsubsection{$D_V$ en var}
+\(D_V\) is een lijst met variabelen, waarbij de variabelen gescheiden worden door een ``;''. De lijst wordt afgesloten
+door middel van een \(\epsilon\) (de lege variabele).
+\begin{eqnarray*}
+\left[\kw{var}^1\right]&&
+\osstep{}
+{\kw{var}\:x:= a\:;\:D_V,\:s[x\mapsto\mathcal{A}|[a|]s]}
+{D_V,\:s'}%
+\\%
+\left[\kw{var}^2\right]&&
+\osstep{}
+{\epsilon,\:s}
+{s}
+\end{eqnarray*}
+
+Wanneer we \(\kw{var}\:x:= a\) aanroepen, dan kijken we of \(x\) al bestaat in de huidige state:
+\begin{itemize}
+  \item Wanneer \(x\) nog niet bestaat, dan wordt er een variabele \(x\) ge\"introduceerd met de waarde \(a\)
+  \item Wanneer \(x\) al bestaat, dan wordt de \(x\) uit de \kw{var} in scope gebracht. Dat betekend dat de \(s\:x = y\)
+  een andere \(x\), zeg \(x_1\), is dan de \(x\), zeg \(x_2\), uit \(s'\:x = z\). Deze \(x_2\) verdwijnt wanneer de
+  functie uit scope gaat, zeg in state \(s''\). Na het uit scope gaan van \(x_2\) krijgen we weer \(s''\:x_1 = y\)
+\end{itemize}
+
+\Subsubsection{$D_F$ en func}
+Zoals gesteld in~\ref{sec:Functies} wordt bij het opstarten van het programma de functie \functielabel{main} uitgevoerd
+en worden alle functielabels globaal gemaakt. Om dit te kunnen doen moeten de functies ingelezen door middel van de
+functie \kw{func}.
+
+\(\left[\kw{func}^1\right]\) zorgt ervoor dat de functie gelezen wordt, en de functielabel globaal samen met zijn
+defaultargumente worden toegevoegd aan de set met functielabels. \(\left[\kw{func}^2\right]\) zorgt ervoor dat als er
+geen functiedeclaraties meer gevonden worden er met de \(main\) begonnen wordt. En deze functie
+\(\left[\kw{func}^2\right]\) lost dat op.
+\begin{eqnarray*}
+\left[\kw{func}^1\right]&&
+\langle\kw{func}\:fl\:tl\_callee\:tl\_caller\:vn\:D_V\:\kw{is}\:\kw{start}\:S\:\kw{end}
+\:;\:D_F,\:s\rangle =>
+s%
+\end{eqnarray*}
+\begin{flushright}
+Waar we toepassen \(\kw{GLOBFL}(\kw{func}\:fl\:D_V\:S \:;\:D_F)\)
+\end{flushright}
+
+\begin{eqnarray*}
+\left[\kw{func}^2\right]&&
+\langle\epsilon,\:s\rangle =>
+\langle\kw{spawn}\:fl:=main \:tl\_callee:=main \:tl\_caller:=\kw{undef}\:vn:=\kw{undef}\:tid=\kw{undef},\:s\rangle
+\end{eqnarray*}
+
+\Subsubsection{call}
+
+FUNC\(_\mathrm{F}\) haalt door middel van een aanroep aan de executieomgeving de statements op die de
+functie-implementatie vormen, van de functie die globaal bekend is onder de naam van het argument, de functielabel.
+\[
+	\mathrm{FUNC}_\mathrm{F} = \mathrm{FunctionLabel} \hookrightarrow \mathrm{Stm}
+\]
+
+\begin{eqnarray*}
+\left[\kw{call}\right]&&
+\osstep{}{\kw{call}\:fl,\:s}{S,\:s}\:\text{ Waar \(\mathrm{FUNC}_\mathrm{F}\:fl = \{S, D_V\}\)}
+\end{eqnarray*}
+
+\Subsubsection{spawn}
+\begin{eqnarray*}
+\left[\kw{spawn}\right]&&
+\langle\kw{spawn}\:fl\:tl\_callee\:tl\_caller\:vn\:tid\:D_V,\:s\rangle =>
+s\\
+&&\parallel\langle D_V'\:;\:D_V\:;
+\:\kw{call}\:fl,\:s[\kw{tl}\mapsto\mathcal{T}|[tl\_callee|]s][\kw{tid}\mapsto\mathcal{T\!L}|[tid|]s][\kw{vn}\mapsto\mathcal{V\!N}|[vn|]s]\rangle
+\end{eqnarray*}
+\begin{flushright}
+Waar we toepassen \(\kw{GLOBTL}(tl)\) en \(\kw{LOCTL}(tl)\:s\) op \(\gamma\) van
+\(\gamma\parallel\gamma'\) en waar \(\mathrm{FUNC}_\mathrm{F}\:fl = \{S, D_V'\}\)
+\end{flushright}
+\(vn\) moet de naam zijn van een lokale variabele in de caller
+
+\Subsubsection{transaction}
+
+In het begin van transactie wordt de state waarmee de transactie begint gekopieerd. Dit gebeurt bij het treffen van het
+woord \kw{start_transaction}.
+\begin{eqnarray*}
+\left[\kw{transaction}\right]
+&&\langle\kw{start_transaction}\:tid\:S\\
+&&\kw{if}\:\kw{collect_votes}\:tid\:\kw{then}\\
+&&\qquad S'\:\kw{if}\:b\:\kw{then}\\
+&&\qquad\qquad S''\:\kw{commit_transaction}\:tid\\
+&&\qquad\kw{else}\\
+&&\qquad\qquad S'''\:\kw{rollback_transaction}\:tid\\
+&&\kw{else}\\
+&&\qquad S''''\:\kw{rollback_transaction}\:tid\\
+&&,s\rangle
+=> \\%
+&&\langle S\:;\:\kw{if}\:\kw{collect_votes}\:tid\:\kw{then}\\
+&&\qquad S'\:\kw{if}\:b\:\kw{then}\\
+&&\qquad\qquad S''\:\kw{commit_transaction}\:tid\\
+&&\qquad\kw{else}\\
+&&\qquad\qquad S'''\:\kw{rollback_transaction}\:tid\\
+&&\kw{else}\\
+&&\qquad S''''\:\kw{rollback_transaction}\:tid\\
+&&,s[\kw{tid}\mapsto\mathcal{T\!L}|[tid|]\rangle
+\end{eqnarray*}
+\begin{flushright}
+Waar we toepassen \(\kw{GLOBTID}(tid)\) en \(\kw{GLOBSTATE}(tl\:tid)\)
+\end{flushright}
+
+\Subsubsection{commit}
+\begin{eqnarray*}
+\left[\kw{commit}\right]&&
+\langle\kw{commit_transaction}\:tid,\:s\rangle => s\\
+\end{eqnarray*}
+\begin{flushright}
+Waar we toepassen \kw{GLOBTID}(\(tid\))
+\end{flushright}
+
+\Subsubsection{rollback}
+\begin{eqnarray*}
+\left[\kw{rollback}\right]&&
+\langle\kw{rollback_transaction}\:tid,\:s\rangle => s'\\
+\end{eqnarray*}
+\begin{flushright}
+\(s'\) is waarde verkregen van \kw{GLOBSTATE''} met \(tid\) en \(tl\) uit \(s\). Waar we toepassen
+\kw{GLOBTID'}(\(tid\))
+\end{flushright}
+
+\Subsubsection{end_transaction}
+Als een subtaak met behulp van set_result tid het resultaat wil zetten
+
+\begin{eqnarray*}
+\left[\kw{end\_transaction}^\kw{tt}\right]
+&& \langle\kw{if}\:\kw{set_result}\:tl\:vn\:a\:b\:tid\:\kw{then} \\
+&& \qquad S_1\:\kw{end_commit_transaction}\:tl\:tid  \\
+&& \kw{else} \\
+&& \qquad S_2\:\kw{end_rollback_transaction}\:tl\:tid \\
+&&,\:s\rangle
+=> \\%
+&&\langle S_1\:\kw{end_commit_transaction}\:tl\:tid, s\rangle
+\end{eqnarray*}
+
+\begin{eqnarray*}
+\left[\kw{end\_transaction}^\kw{ff}\right]
+&& \langle\kw{if}\:\kw{set_result}\:tl\:vn\:a\:b\:tid\:\kw{then} \\
+&& \qquad S_1\:\kw{end_commit_transaction}\:tl\:tid  \\
+&& \kw{else} \\
+&& \qquad S_2\:\kw{end_rollback_transaction}\:tl\:tid \\
+&&,\:s\rangle
+=> \\%
+&&\langle S_2\:\kw{end_rollback_transaction}\:tl\:tid, s\rangle
+\end{eqnarray*}
+
+\Subsubsection{end_commit}
+\begin{eqnarray*}
+\left[\kw{end_commit}\right]&&
+\langle\kw{end_commit_transaction}\:tl\:tid,\:s\rangle => s\\
+\end{eqnarray*}
+\begin{flushright}
+Waar we toepassen \kw{GLOBTID'}(\(tid\)) en \kw{LOCTID'}(\(tid\))
+\end{flushright}
+
+\Subsubsection{end_rollback}
+\begin{eqnarray*}
+\left[\kw{end_rollback}\right]&&
+\langle\kw{end_rollback_transaction}\:tl\:tid,\:s\rangle => s'\\
+\end{eqnarray*}
+\begin{flushright}
+\(s'\) is waarde verkregen van \kw{GLOBSTATE''} met \(tid\) en \(tl\) uit \(s\). Waar we toepassen
+\kw{GLOBTID'}(\(tid\)) en \kw{LOCTID'}(\(tid\))
+\end{flushright}

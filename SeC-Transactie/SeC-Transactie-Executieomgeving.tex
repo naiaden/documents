@@ -1,0 +1,78 @@
+In het werk zal voortdurend gebruik gemaakt worden van het begrip programma. Een programma in essentie niets anders dan
+een verzameling van functies (zie~\ref{sec:Functies}). Deze functies zijn op hun beurt weer een sequentie van
+statements.
+
+Een programma in While is ook een serie statements, maar hier worden verder geen eisen aan gesteld;
+\(\mathcal{S}|[z:=x|](x\mapsto5)\) kan ook al een geldig programma zijn. Bij ons is een programma hetgeen de programmeur
+opschrijft (zie~\ref{sec:Programma}). Dus programma als begrip omvat alles wat minimaal ge\"eist wordt door de
+specificaties, en dit omvat ook het begrip programma uit While, de sequentie van statements. In deze programma's mag
+gebruik gemaakt worden van alle mogelijkheden die While biedt, maar nu zijn er ook een aantal uitbreidingen die gebruikt
+mogen worden zoals het opstarten van parallelle taken en het opstarten van een transactionele omgeving met alle voor- en
+nadelen die ermee verbonden zijn.
+
+\Section{Executieomgeving}
+
+Een programma staat meestal niet op zich. In de meeste gevallen wordt een programma opgestart binnen een
+besturingssysteem. Een dergelijke omgeving zorgt ervoor dat allerlei infrastructuur niet door ieder programma zelf
+ge\"implementeerd hoeft te worden. In een aantal gevallen zullen we omwille van abstractie gebruik maken van een
+dergelijke omgeving, hier \Index{executieomgeving} genoemd.
+
+Het is de taak van de executieomgeving om het programma op te starten en alle benodigde variabelen te initialiseren.
+Verder zorgt de executieomgeving voor het beheer van de taken en zorgt ervoor dat communicatie tussen de taken mogelijk
+is.
+
+\Subsection{Globaliteit}
+De executieomgeving is de meest globale omgeving. Dat wilt zeggen dat de executieomgeving alles kan overzien wat er
+gebeurt in het programma; het heeft dus zicht op alle taken, variabelen en de algemene progressie.
+
+Omdat onze taal het niet toestaat dat een taak variabelen aanspreekt of wijzigt buiten de omgeving van de taak, levert
+dit in gevallen wanneer de ene taak bijvoorbeeld een resultaat terug wilt geven aan een andere taak, problemen op. Om
+dit toch goed te laten verlopen wordt er voor de interactie tussen de twee taken gebruik gemaakt van de
+executieomgeving als tussenpersoon, zodat de overdracht van gegevens niet alleen goed verloopt, zonder de regels te
+overtreden, maar ook om deze overdracht als atomaire stap te beschouwen.
+
+Een andere belangrijke taak van de executieomgeving is het in de gaten houden van de taken. Zeker in het geval van
+interactie tussen taken (zoals die in transacties bijvoorbeeld plaats zullen gaan vinden) is het erg handig om te weten
+of de taak met wie je wilt samenwerken \"uberhaupt nog wel bestaat. De executieomgeving zal niet per se publiekelijk
+maken dat een taak gestorven is, maar wanneer er naar gevraagd wordt kan er onder alle omstandigheden een antwoord
+verkregen worden betreffende de status van de taak.
+
+In sommige gevallen maakt de executieomgeving ook bepaalde dingen publiekelijk, dit geldt voor de zogenaamde labels. Op
+elk moment is voor elke taak bekend welke functies er allemaal bestaan, maar ook welke andere taken er zijn en welke
+transacties er allemaal bezig zijn. Labels die expliciet lokaal zijn binnen de taak zijn de variabelen, dit onder
+andere om te verzekeren dat data-integriteit gegarandeerd kan worden (met als uitzondering de executieomgeving, die deze
+variabelen wel kan inzien).
+
+Het is voor de individuele taken binnen een programma niet mogelijk om onderling direct te communiceren. Eventuele
+communicatie (zoals het wachten op elkaar en het doorgeven van resultaten etc) gebeurt door dit aan de executieomgeving
+``te vragen'' door middel van functieaanroepen/systemcalls. Alle communicatie tussen de executieomgeving en individuele
+taken gebeurt atomair: er is nooit sprake van enig raceconditie als gevolg van deze communicatie.
+
+De state van de executieomgeving is vergelijkbaar met een environment (zoals in Proc). We kennen hier geen speciale
+naam aan toe, maar we gaan er vanuit dat deze omgeving er gewoon is. Op die manier kunnen we er ook voor zorgen dat
+taken niet zomaar globale waarden kunnen aanpassen, en dus kan er voor gezorgd worden dat de globale omgeving schoon
+blijft van onnodige variabelen. We houden de globale omgeving niet expliciet bij, maar waar nodig komt het in de
+semantiek tot uiting dat er iets aangepast wordt.
+
+\Subsection[Undefinedreferences]{Ongedefinieerde variabelen}
+Een variabele die \kw{\Index{undef}} is, kan alleen gebruikt worden om te testen of om deze variabel een waarde te
+geven. Alle andere bewerkingen met een dergelijk variabele leidt tot een abort van het gehele programma.
+
+De executieomgeving houdt bij welke variabelen en welke labels er op een gegeven moment bestaan. De
+executieomgeving kan dus in het geval van een verwijzing naar een label of variabele die niet (meer) bestaat er voor
+zorgen dat het programma ophoudt.
+
+Hier zijn ook andere keuzen te maken, maar die zijn niet per se makkelijker als het gaat over het redeneren over het
+verloop en de uitkomst van een programma:
+\begin{description}
+\item[Ongedefinieerd gedrag] Dit is iets wat in de praktijk makkelijker is dan in een formele, speciaal om te bewijzen,
+opgezette taal. Dit gedrag is overigens niet handig en zeer onwenselijk, aangezien het programma na zo een ongeldige
+aanroep elke uitkomst kan geven. Dit omvat uitkomsten die per definitie fout zijn, maar ook antwoorden die wel eens
+goed zouden kunnen zijn. Kortom, aan het antwoord is geen waarde toe te kennen, aangezien deze onder ongedefinieerd
+gedrag tot stand gekomen is
+\item[Exceptie] Een andere methode om dit soort problemen op te vangen is het gooien van een exceptie. Met behulp van
+een exceptie weet je dat er iets mis gegaan is, en kan er naar gehandeld worden.
+
+Dit is een zeer vruchtbaar alternatief voor onze gekozen oplossing; deze uitbreiding vergt echter nog meer
+uitbreidingen op While bovenop de al door ons voorgestelde uitbreidingen
+\end{description}
